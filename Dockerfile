@@ -20,7 +20,7 @@ COPY . /app
 RUN rm -rf build && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -S /app -B /app/build \
     && cmake --build /app/build
 
-# Запуск
+# Запуск бота
 CMD ["/app/build/tg_bot.x"]
 
 

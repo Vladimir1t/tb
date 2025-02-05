@@ -1,10 +1,12 @@
 #include <iostream>
 #include <tg_bot.hpp>
 
+/** @brief tg-bot for ranging queries
+ *  @param token you can get it from BotFather
+ */
 int main() {
 
-    std::cout << "hi\n";
-    my::tg_bot bot("7444573816:AAFAU2EckrSQE_rQjvBtI8r6ObT4NoApHnw");  // токен бота 
+    my::tg_bot bot("write_here_token");  // токен бота 
 
     bot.run_bot();
 
