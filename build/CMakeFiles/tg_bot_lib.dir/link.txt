@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libtg_bot_lib.a CMakeFiles/tg_bot_lib.dir/src/tg_bot.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libtg_bot_lib.a
