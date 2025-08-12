@@ -32,61 +32,38 @@ class Project(BaseModel):
 
 class User(BaseModel):
     id: int
-    username: str = None
+    username: str | None = None  # Явно указываем, что может быть None
     stars: int = 0
     balance: float = 0
+    projects_count: int = 0  # Добавляем отсутствующее поле
+
+    class Config:
+        json_encoders = {
+            type(None): lambda _: None  # Корректная сериализация None
+        }
 
 # Инициализация БД
 def init_db():
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT CHECK(type IN ('channel', 'bot', 'mini_app')),
-        name TEXT,
-        link TEXT,
-        theme TEXT,
-        is_premium BOOLEAN DEFAULT 0,
-        likes INTEGER DEFAULT 0,
-        subscribers INTEGER DEFAULT 0,
-        user_id INTEGER
-    )
-    ''')
-    
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        username TEXT,
-        stars INTEGER DEFAULT 0,
-        balance REAL DEFAULT 0
-    )
-    ''')
-    
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS tasks (
-        user_id INTEGER,
-        task_type TEXT,
-        completed BOOLEAN DEFAULT 0,
-        PRIMARY KEY (user_id, task_type)
-    )
-    ''')
+    # Создание таблиц (оставьте ваш существующий код)
     
     # Добавляем тестовые данные
     cursor.execute("SELECT COUNT(*) FROM projects")
     if cursor.fetchone()[0] == 0:
-        test_data = [
-            ('channel', 'IT Новости', 'https://t.me/it_news', 'technology', True, 1000, 25000, 1),
-            ('channel', 'Маркетинг', 'https://t.me/marketing', 'business', False, 500, 15000, 1),
-            ('bot', 'Погодный Бот', 'https://t.me/weatherbot', 'utility', False, 300, 5000, 1),
-            ('bot', 'Финансы', 'https://t.me/finance_bot', 'finance', True, 800, 18000, 1),
-            ('mini_app', 'Игра-головоломка', 'https://t.me/gameapp', 'games', False, 200, 8000, 1)
+        test_projects = [
+            ('channel', 'IT Новости', 'https://t.me/it_news', 'technology', 1, 100, 25000, 1),
+            ('channel', 'Маркетинг', 'https://t.me/marketing', 'business', 0, 50, 15000, 1),
+            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1),
+            ('bot', 'Финансовый помощник', 'https://t.me/finance_bot', 'finance', 1, 80, 18000, 1),
+            ('mini_app', 'Головоломки', 'https://t.me/puzzle_app', 'games', 0, 20, 8000, 1)
         ]
         cursor.executemany('''
-            INSERT INTO projects (type, name, link, theme, is_premium, likes, subscribers, user_id)
+            INSERT INTO projects 
+            (type, name, link, theme, is_premium, likes, subscribers, user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', test_data)
+        ''', test_projects)
     
     conn.commit()
     conn.close()
@@ -220,6 +197,36 @@ async def complete_task(user_id: int, task_type: str, request: Request):
 @app.get("/ping")
 async def ping():
     return {"status": "ok", "message": "Backend is running"}
+
+@app.get("/users/{user_id}", response_model=User)
+async def get_user(user_id: int):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id, username, stars, balance FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
+            conn.commit()
+            cursor.execute("SELECT id, username, stars, balance FROM users WHERE id = ?", (user_id,))
+            user = cursor.fetchone()
+        
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
+        projects_count = cursor.fetchone()[0]
+        
+        return {
+            "id": user["id"],
+            "username": user["username"] if user["username"] else None,
+            "stars": user["stars"],
+            "balance": user["balance"],
+            "projects_count": projects_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
 
 @app.on_event("startup")
 async def startup_db():
