@@ -3,6 +3,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 from typing import List
+from fastapi import Request
+import hmac
+import hashlib
+
+@app.post("/verify_telegram")
+async def verify_telegram(request: Request):
+    data = await request.json()
+    token = "8143528604:AAEiouPy36hamVNvQhJK3ptZsiaUXJjkwIs"  # Получите у @BotFather
+    
+    secret_key = hashlib.sha256(token.encode()).digest()
+    auth_data = data['auth_data']
+    check_hash = data['hash']
+    
+    data_check = []
+    for key, value in sorted(auth_data.items()):
+        data_check.append(f"{key}={value}")
+    data_check_string = "\n".join(data_check)
+    
+    h = hmac.new(secret_key, msg=data_check_string.encode(), digestmod=hashlib.sha256)
+    if h.hexdigest() != check_hash:
+        raise HTTPException(status_code=401, detail="Invalid hash")
+    
+    return {"status": "ok"}
 
 app = FastAPI()
 
