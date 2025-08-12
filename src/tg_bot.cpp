@@ -6,7 +6,7 @@
  */
 int main() {
 
-    my::tg_bot bot("write_here_token");  // токен бота 
+    my::tg_bot bot("7444573816:AAFAU2EckrSQE_rQjvBtI8r6ObT4NoApHnw");  // токен бота 
 
     bot.run_bot();
 
