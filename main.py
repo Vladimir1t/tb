@@ -48,9 +48,41 @@ def init_db():
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     
-    # Создание таблиц (оставьте ваш существующий код)
+    # Create tables if they don't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        link TEXT NOT NULL,
+        theme TEXT NOT NULL,
+        is_premium BOOLEAN DEFAULT 0,
+        likes INTEGER DEFAULT 0,
+        subscribers INTEGER DEFAULT 0,
+        user_id INTEGER DEFAULT 1
+    )
+    ''')
     
-    # Добавляем тестовые данные
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY,
+        username TEXT,
+        stars INTEGER DEFAULT 0,
+        balance REAL DEFAULT 0
+    )
+    ''')
+    
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS tasks (
+        user_id INTEGER,
+        task_type TEXT,
+        completed BOOLEAN DEFAULT 0,
+        PRIMARY KEY (user_id, task_type),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+    ''')
+    
+    # Add test data only if tables are empty
     cursor.execute("SELECT COUNT(*) FROM projects")
     if cursor.fetchone()[0] == 0:
         test_projects = [

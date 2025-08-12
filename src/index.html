@@ -272,20 +272,23 @@
         // Загрузка данных
         async function loadProjects(type) {
             const tabContent = document.getElementById(`${type}-tab`);
-            
+                
             try {
-                // Показываем анимацию загрузки
                 tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
                 
                 const response = await fetch(`${API_URL}/projects/?type=${type}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const projects = await response.json();
                 
-                if (projects.length === 0) {
+                if (!projects || projects.length === 0) {
                     tabContent.innerHTML = '<div class="loading">Ничего не найдено</div>';
                     return;
                 }
                 
-                // Создаем карточки
                 let html = '';
                 projects.forEach(project => {
                     html += `
@@ -304,7 +307,12 @@
                 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
-                tabContent.innerHTML = '<div class="loading">Ошибка загрузки данных</div>';
+                tabContent.innerHTML = `
+                    <div class="loading">
+                        Ошибка загрузки: ${error.message}<br>
+                        <button onclick="loadProjects('${type}')">Попробовать снова</button>
+                    </div>
+                `;
             }
         }
 
