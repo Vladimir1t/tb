@@ -231,35 +231,61 @@ async def complete_task(user_id: int, task_type: str, request: Request):
 async def ping():
     return {"status": "ok", "message": "Backend is running"}
 
+# Remove the duplicate get_user endpoint and keep this one:
 @app.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: int):
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT id, username, stars, balance FROM users WHERE id = ?", (user_id,))
+    conn = sqlite3.connect('aggregator.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
+        conn.commit()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         user = cursor.fetchone()
-        
-        if not user:
-            cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
-            conn.commit()
-            cursor.execute("SELECT id, username, stars, balance FROM users WHERE id = ?", (user_id,))
-            user = cursor.fetchone()
-        
-        cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
-        projects_count = cursor.fetchone()[0]
-        
-        return {
-            "id": user["id"],
-            "username": user["username"] if user["username"] else None,
-            "stars": user["stars"],
-            "balance": user["balance"],
-            "projects_count": projects_count
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
+    
+    cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
+    projects_count = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    user_dict = dict(user)
+    user_dict['projects_count'] = projects_count
+    return user_dict
+
+@app.get("/debug/db")
+async def debug_db():
+    conn = sqlite3.connect('aggregator.db')
+    cursor = conn.cursor()
+    
+    # Check tables exist
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = cursor.fetchall()
+    
+    # Count rows in each table
+    counts = {}
+    for table in tables:
+        table_name = table[0]
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        counts[table_name] = cursor.fetchone()[0]
+    
+    conn.close()
+    return {"tables": tables, "counts": counts}
+
+@app.get("/debug/projects")
+async def debug_projects():
+    conn = sqlite3.connect('aggregator.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM projects")
+    projects = cursor.fetchall()
+    
+    conn.close()
+    return [dict(project) for project in projects]
 
 @app.on_event("startup")
 async def startup_db():
