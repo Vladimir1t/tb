@@ -273,11 +273,11 @@
         async function loadProjects(type) {
             const tabContent = document.getElementById(`${type}-tab`);
             tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
-                
+
             try {
                 console.log(`Fetching projects for type: ${type}`);
                 const response = await fetch(`${API_URL}/projects/?type=${type}`);
-                
+
                 console.log('Response status:', response.status);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -366,7 +366,7 @@
         // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
             // Первая загрузка
-            loadProjects('channels');
+            loadProjects('channel');
             loadUserProfile();
             
             // Настройка кнопки назад в Telegram
