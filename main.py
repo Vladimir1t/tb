@@ -86,8 +86,12 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM projects")
     if cursor.fetchone()[0] == 0:
         test_projects = [
-            ('channel', 'IT Новости', 'https://t.me/it_news', 'technology', 1, 100, 25000, 1),
+            ('channel', 'Хабр', 'https://t.me/habr_com', 'technology', 1, 100, 122000, 1),
+            ('channel', 'Новости Москвы', 'https://t.me/moscowmap', 'news', 0, 50, 2730000, 1),
             ('channel', 'Маркетинг', 'https://t.me/marketing', 'business', 0, 50, 15000, 1),
+            ('channel', 'Книга животных', 'https://t.me/knigajivotnih1', 'animals', 0, 50, 15000, 1),
+            ('channel', 'МФТИ', 'https://t.me/miptru', 'university', 0, 50, 15000, 1),
+            ('channel', 'catharsis', 'https://t.me/truecatharsis', 'art', 0, 50, 15000, 1),
             ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1),
             ('bot', 'Финансовый помощник', 'https://t.me/finance_bot', 'finance', 1, 80, 18000, 1),
             ('mini_app', 'Головоломки', 'https://t.me/puzzle_app', 'games', 0, 20, 8000, 1)
