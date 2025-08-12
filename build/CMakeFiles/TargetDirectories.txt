@@ -1,0 +1,4 @@
+/Users/a/Desktop/C++/Telegram-bot/build/CMakeFiles/tg_bot_lib.dir
+/Users/a/Desktop/C++/Telegram-bot/build/CMakeFiles/tg_bot.x.dir
+/Users/a/Desktop/C++/Telegram-bot/build/CMakeFiles/edit_cache.dir
+/Users/a/Desktop/C++/Telegram-bot/build/CMakeFiles/rebuild_cache.dir

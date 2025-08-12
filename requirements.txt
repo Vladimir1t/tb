@@ -1,4 +1,4 @@
 fastapi==0.109.2
 uvicorn==0.27.0
 python-multipart==0.0.9
-aiogram==2.25.1
+sqlite3==3.31.1 

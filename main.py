@@ -3,31 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 from typing import List
+import uvicorn
 from fastapi import Request
 import hmac
 import hashlib
 
 app = FastAPI()
-
-@app.post("/verify_telegram")
-async def verify_telegram(request: Request):
-    data = await request.json()
-    token = "8143528604:AAEiouPy36hamVNvQhJK3ptZsiaUXJjkwIs"  # Получите у @BotFather
-    
-    secret_key = hashlib.sha256(token.encode()).digest()
-    auth_data = data['auth_data']
-    check_hash = data['hash']
-    
-    data_check = []
-    for key, value in sorted(auth_data.items()):
-        data_check.append(f"{key}={value}")
-    data_check_string = "\n".join(data_check)
-    
-    h = hmac.new(secret_key, msg=data_check_string.encode(), digestmod=hashlib.sha256)
-    if h.hexdigest() != check_hash:
-        raise HTTPException(status_code=401, detail="Invalid hash")
-    
-    return {"status": "ok"}
 
 # Настройка CORS
 app.add_middleware(
@@ -37,7 +18,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Модели Pydantic
+
+# Модели данных
 class Project(BaseModel):
     id: int = None
     type: str  # 'channel', 'bot' или 'mini_app'
@@ -59,7 +41,6 @@ def init_db():
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     
-    # Таблица проектов
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +55,6 @@ def init_db():
     )
     ''')
     
-    # Таблица пользователей
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
@@ -84,7 +64,6 @@ def init_db():
     )
     ''')
     
-    # Таблица заданий
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS tasks (
         user_id INTEGER,
@@ -94,14 +73,41 @@ def init_db():
     )
     ''')
     
+    # Добавляем тестовые данные
+    cursor.execute("SELECT COUNT(*) FROM projects")
+    if cursor.fetchone()[0] == 0:
+        test_data = [
+            ('channel', 'IT Новости', 'https://t.me/it_news', 'technology', True, 1000, 25000, 1),
+            ('channel', 'Маркетинг', 'https://t.me/marketing', 'business', False, 500, 15000, 1),
+            ('bot', 'Погодный Бот', 'https://t.me/weatherbot', 'utility', False, 300, 5000, 1),
+            ('bot', 'Финансы', 'https://t.me/finance_bot', 'finance', True, 800, 18000, 1),
+            ('mini_app', 'Игра-головоломка', 'https://t.me/gameapp', 'games', False, 200, 8000, 1)
+        ]
+        cursor.executemany('''
+            INSERT INTO projects (type, name, link, theme, is_premium, likes, subscribers, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', test_data)
+    
     conn.commit()
     conn.close()
 
 init_db()
 
+# Валидация данных Telegram
+def validate_telegram_data(token: str, init_data: str):
+    try:
+        secret_key = hmac.new(
+            key=hashlib.sha256(token.encode()).digest(),
+            msg=init_data.encode(),
+            digestmod=hashlib.sha256
+        )
+        return secret_key.hexdigest()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # API endpoints
 @app.get("/projects/", response_model=List[Project])
-def get_projects(type: str = None, theme: str = None):
+async def get_projects(type: str = None, theme: str = None):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -119,6 +125,8 @@ def get_projects(type: str = None, theme: str = None):
         query += " WHERE theme = ?"
         params.append(theme)
     
+    query += " ORDER BY is_premium DESC, likes DESC"
+    
     cursor.execute(query, params)
     projects = cursor.fetchall()
     conn.close()
@@ -126,14 +134,21 @@ def get_projects(type: str = None, theme: str = None):
     return [dict(project) for project in projects]
 
 @app.post("/projects/", response_model=Project)
-def create_project(project: Project, user_id: int):
+async def create_project(project: Project, request: Request):
+    init_data = request.headers.get('X-Telegram-Init-Data')
+    if not init_data:
+        raise HTTPException(status_code=401, detail="Telegram auth required")
+    
+    # В реальном приложении нужно проверить init_data
+    # validate_telegram_data("YOUR_BOT_TOKEN", init_data)
+    
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     
     cursor.execute('''
-    INSERT INTO projects (type, name, link, theme, is_premium, user_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', (project.type, project.name, project.link, project.theme, project.is_premium, user_id))
+    INSERT INTO projects (type, name, link, theme, is_premium)
+    VALUES (?, ?, ?, ?, ?)
+    ''', (project.type, project.name, project.link, project.theme, project.is_premium))
     
     project_id = cursor.lastrowid
     conn.commit()
@@ -142,7 +157,7 @@ def create_project(project: Project, user_id: int):
     return {**project.dict(), "id": project_id}
 
 @app.get("/users/{user_id}", response_model=User)
-def get_user(user_id: int):
+async def get_user(user_id: int):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -151,21 +166,27 @@ def get_user(user_id: int):
     user = cursor.fetchone()
     
     if not user:
-        # Создаем нового пользователя при первом обращении
         cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
         conn.commit()
         cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         user = cursor.fetchone()
     
+    # Получаем количество проектов пользователя
+    cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
+    projects_count = cursor.fetchone()[0]
+    
     conn.close()
-    return dict(user)
+    
+    user_dict = dict(user)
+    user_dict['projects_count'] = projects_count
+    return user_dict
 
 @app.post("/users/{user_id}/complete_task")
-def complete_task(user_id: int, task_type: str):
-    conn = sqlite3.connect('aggregator.db')
-    cursor = conn.cursor()
+async def complete_task(user_id: int, task_type: str, request: Request):
+    init_data = request.headers.get('X-Telegram-Init-Data')
+    if not init_data:
+        raise HTTPException(status_code=401, detail="Telegram auth required")
     
-    # Определяем награду за задание
     rewards = {
         'banner': 5,
         'subscribe': 3,
@@ -175,22 +196,34 @@ def complete_task(user_id: int, task_type: str):
     if task_type not in rewards:
         raise HTTPException(status_code=400, detail="Invalid task type")
     
-    # Отмечаем задание как выполненное и начисляем звезды
-    cursor.execute('''
-    INSERT OR REPLACE INTO tasks (user_id, task_type, completed)
-    VALUES (?, ?, 1)
-    ''', (user_id, task_type))
+    conn = sqlite3.connect('aggregator.db')
+    cursor = conn.cursor()
     
-    cursor.execute('''
-    UPDATE users SET stars = stars + ? WHERE id = ?
-    ''', (rewards[task_type], user_id))
-    
-    conn.commit()
-    conn.close()
-    
-    return {"status": "success", "stars_added": rewards[task_type]}
+    try:
+        cursor.execute('''
+        INSERT OR REPLACE INTO tasks (user_id, task_type, completed)
+        VALUES (?, ?, 1)
+        ''', (user_id, task_type))
+        
+        cursor.execute('''
+        UPDATE users SET stars = stars + ? WHERE id = ?
+        ''', (rewards[task_type], user_id))
+        
+        conn.commit()
+        return {"status": "success", "stars_added": rewards[task_type]}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.get("/ping")
+async def ping():
+    return {"status": "ok", "message": "Backend is running"}
+
+@app.on_event("startup")
+async def startup():
+    init_db()  # Ваша функция инициализации БД
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

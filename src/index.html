@@ -1,59 +1,227 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Aggregator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        :root {
+            --primary-color: #0088cc;
+            --secondary-color: #f8f9fa;
+            --accent-color: #17bf63;
+            --text-color: #333333;
+            --light-text: #6c757d;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f4f4f5;
-            color: #333;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
+
+        body {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            padding-bottom: 70px;
+            transition: var(--transition);
+        }
+
         .container {
             max-width: 100%;
             padding: 15px;
+            animation: fadeIn 0.5s ease;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            padding-top: 15px;
         }
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+        .header h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 8px;
         }
-        .premium-card {
-            border: 2px solid #fbbf24;
-            background-color: #fffbeb;
+
+        .header p {
+            color: var(--light-text);
+            font-size: 1rem;
         }
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #3b82f6;
-            color: white;
-            border-radius: 8px;
-            text-decoration: none;
-            text-align: center;
-            margin-top: 10px;
-        }
+
         .tabs {
             display: flex;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background-color: var(--secondary-color);
+            z-index: 100;
+            padding-bottom: 5px;
         }
+
         .tab {
-            padding: 10px 15px;
+            padding: 12px 20px;
             cursor: pointer;
+            font-weight: 500;
+            color: var(--light-text);
+            transition: var(--transition);
+            position: relative;
         }
+
         .tab.active {
-            border-bottom: 2px solid #3b82f6;
-            color: #3b82f6;
+            color: var(--primary-color);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+            animation: tabUnderline 0.3s ease;
+        }
+
+        @keyframes tabUnderline {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInContent 0.4s ease;
+        }
+
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .premium-card {
+            border: 2px solid #ffc107;
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #ffc107;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            padding-right: 40px;
+        }
+
+        .card p {
+            color: var(--light-text);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #0078b4;
+            transform: translateY(-2px);
+        }
+
+        .likes {
+            display: flex;
+            align-items: center;
+            margin-top: 12px;
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+
+        .likes span {
+            margin-left: 5px;
+        }
+
+        .tg-button-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            background: white;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .profile-btn {
+            background: var(--accent-color);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
         }
     </style>
 </head>
@@ -65,116 +233,151 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="showTab('channels')">Каналы</div>
-            <div class="tab" onclick="showTab('bots')">Боты</div>
-            <div class="tab" onclick="showTab('apps')">Мини-приложения</div>
+            <div class="tab active" data-tab="channels">Каналы</div>
+            <div class="tab" data-tab="bots">Боты</div>
+            <div class="tab" data-tab="apps">Мини-приложения</div>
         </div>
 
-        <div id="channels-tab" class="tab-content">
-            <div class="card premium-card">
-                <h3>🌟 Премиум канал</h3>
-                <p>Тематика: Маркетинг</p>
-                <p>Подписчиков: 25K</p>
-                <a href="https://t.me/premium_channel" class="btn">Перейти</a>
-            </div>
-            
-            <div class="card">
-                <h3>Канал про IT</h3>
-                <p>Тематика: Программирование</p>
-                <p>Подписчиков: 10K</p>
-                <a href="https://t.me/it_channel" class="btn">Перейти</a>
-            </div>
+        <div id="channels-tab" class="tab-content active">
+            <div class="loading">Загрузка каналов...</div>
         </div>
 
-        <div id="bots-tab" class="tab-content" style="display:none;">
-            <div class="card premium-card">
-                <h3>🌟 Премиум бот</h3>
-                <p>Тематика: Финансы</p>
-                <p>Пользователей: 50K</p>
-                <a href="https://t.me/premium_bot" class="btn">Перейти</a>
-            </div>
-            
-            <div class="card">
-                <h3>Бот-переводчик</h3>
-                <p>Тематика: Языки</p>
-                <p>Пользователей: 15K</p>
-                <a href="https://t.me/translate_bot" class="btn">Перейти</a>
-            </div>
+        <div id="bots-tab" class="tab-content">
+            <div class="loading">Загрузка ботов...</div>
         </div>
 
-        <div id="apps-tab" class="tab-content" style="display:none;">
-            <div class="card">
-                <h3>Игра-головоломка</h3>
-                <p>Рейтинг: ★★★★★</p>
-                <a href="https://t.me/game_mini_app" class="btn">Открыть</a>
-            </div>
+        <div id="apps-tab" class="tab-content">
+            <div class="loading">Загрузка приложений...</div>
         </div>
     </div>
 
+    <div class="tg-button-container">
+        <button class="btn profile-btn" id="profileBtn">Мой профиль</button>
+    </div>
+
     <script>
-        async function loadProjects(type) {
-            try {
-                const response = await fetch(`https://telegram-bot-zgkr.onrender.com/projects/?type=${type}`);
-                const projects = await response.json();
-
-                const tabContent = document.getElementById(`${type}-tab`);
-                tabContent.innerHTML = '';
-
-                projects.forEach(project => {
-                    const card = document.createElement('div');
-                    card.className = `card ${project.is_premium ? 'premium-card' : ''}`;
-                    card.innerHTML = `
-                        <h3>${project.is_premium ? '🌟 ' : ''}${project.name}</h3>
-                        <p>Тематика: ${project.theme}</p>
-                        ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
-                        <a href="${project.link}" class="btn">Перейти</a>
-                        ${project.likes ? `<span>❤️ ${project.likes}</span>` : ''}
-                    `;
-                    tabContent.appendChild(card);
-                });
-            } catch (error) {
-                console.error('Ошибка загрузки проектов:', error);
-            }
-        }
-
-        // Обновляем функцию showTab
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.style.display = 'none';
-            });
-
-            const activeTab = document.getElementById(`${tabName}-tab`);
-            activeTab.style.display = 'block';
-            loadProjects(tabName);
-
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
-
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
+        
+        // Основные переменные
+        const API_URL = 'https://telegram-bot-zgkr.onrender.com';
+        let currentUser = null;
 
-        // Загружаем данные пользователя
-        async function initUser() {
-            const user = tg.initDataUnsafe?.user;
-            if (user) {
-                const response = await fetch(`https://telegram-bot-zgkr.onrender.com/users/${user.id}`);
-                const userData = await response.json();
+        // DOM элементы
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const profileBtn = document.getElementById('profileBtn');
 
-                tg.MainButton.setText(`Мой профиль (${userData.stars}★)`);
-                tg.MainButton.show();
-                tg.MainButton.onClick(() => {
-                    tg.showAlert(`Ваш профиль: ${userData.stars}★, ${userData.balance} руб.`);
+        // Загрузка данных
+        async function loadProjects(type) {
+            const tabContent = document.getElementById(`${type}-tab`);
+            
+            try {
+                // Показываем анимацию загрузки
+                tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+                
+                const response = await fetch(`${API_URL}/projects/?type=${type}`);
+                const projects = await response.json();
+                
+                if (projects.length === 0) {
+                    tabContent.innerHTML = '<div class="loading">Ничего не найдено</div>';
+                    return;
+                }
+                
+                // Создаем карточки
+                let html = '';
+                projects.forEach(project => {
+                    html += `
+                        <div class="card ${project.is_premium ? 'premium-card' : ''}">
+                            ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
+                            <h3>${project.name}</h3>
+                            <p>Тематика: ${project.theme}</p>
+                            ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
+                            <a href="${project.link}" class="btn">Перейти</a>
+                            <div class="likes">❤️ <span>${project.likes || 0}</span></div>
+                        </div>
+                    `;
                 });
+                
+                tabContent.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                tabContent.innerHTML = '<div class="loading">Ошибка загрузки данных</div>';
             }
         }
 
+        // Переключение вкладок
+        function switchTab(tabName) {
+            // Анимация исчезновения
+            const activeContent = document.querySelector('.tab-content.active');
+            if (activeContent) {
+                activeContent.classList.add('fade-out');
+                setTimeout(() => {
+                    activeContent.classList.remove('active', 'fade-out');
+                }, 300);
+            }
+            
+            // Обновляем активные табы
+            tabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+            
+            // Показываем новый контент
+            const newContent = document.getElementById(`${tabName}-tab`);
+            newContent.classList.add('active');
+            
+            // Загружаем данные
+            loadProjects(tabName);
+        }
+
+        // Загрузка данных пользователя
+        async function loadUserProfile() {
+            if (!tg.initDataUnsafe?.user) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/users/${tg.initDataUnsafe.user.id}`);
+                const userData = await response.json();
+                currentUser = userData;
+                
+                // Обновляем кнопку профиля
+                profileBtn.textContent = `Профиль (${userData.stars}★)`;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки профиля:', error);
+            }
+        }
+
+        // Обработчики событий
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchTab(tab.dataset.tab);
+            });
+        });
+
+        profileBtn.addEventListener('click', () => {
+            if (currentUser) {
+                tg.showAlert(`Ваш профиль:\n★ Звезды: ${currentUser.stars}\n💰 Баланс: ${currentUser.balance} руб.`);
+            } else {
+                tg.showAlert('Профиль не загружен. Попробуйте позже.');
+            }
+        });
+
         // Инициализация
-        initUser();
-        showTab('channels');
+        document.addEventListener('DOMContentLoaded', () => {
+            // Первая загрузка
+            loadProjects('channels');
+            loadUserProfile();
+            
+            // Настройка кнопки назад в Telegram
+            if (tg.platform !== 'unknown') {
+                tg.BackButton.show();
+                tg.BackButton.onClick(() => {
+                    tg.close();
+                });
+            }
+        });
     </script>
 </body>
 </html>
