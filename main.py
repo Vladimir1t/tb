@@ -7,6 +7,7 @@ import uvicorn
 from fastapi import Request
 import hmac
 import hashlib
+from typing import Optional  
 
 app = FastAPI()
 
@@ -32,7 +33,7 @@ class Project(BaseModel):
 
 class User(BaseModel):
     id: int
-    username: str | None = None  # Явно указываем, что может быть None
+    username: Optional[str] = None  # Явно указываем, что может быть None
     stars: int = 0
     balance: float = 0
     projects_count: int = 0  # Добавляем отсутствующее поле
