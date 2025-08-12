@@ -150,6 +150,11 @@ async def get_projects(type: str = None, theme: str = None):
     projects = cursor.fetchall()
     conn.close()
     
+    if not projects:
+        print(f"No projects found for type: {type}, theme: {theme}")
+    else:
+        print(f"Found {len(projects)} projects for type: {type}, theme: {theme}")
+    
     return [dict(project) for project in projects]
 
 @app.post("/projects/", response_model=Project)
