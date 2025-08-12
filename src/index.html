@@ -207,6 +207,29 @@
 
         .profile-btn {
             background: var(--accent-color);
+            font-size: 1.1rem;
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin: 10px auto;
+            display: block;
+            width: auto;
+            min-width: 200px;
+        }
+
+        .profile-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .channel-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            float: left;
+        }
+
+        .card h3 {
+          padding-top: 8px; /* Добавим отступ для выравнивания с иконкой */
         }
 
         .loading {
@@ -219,6 +242,40 @@
             animation: fadeOut 0.3s ease;
         }
 
+        .help-section {
+          background: #f8f9fa;
+          padding: 20px;
+          border-radius: 14px;
+          margin-top: 30px;
+          text-align: center;
+        }
+
+        .help-btn {
+          background: #6c757d;
+          margin: 15px auto;
+        }
+
+        .help-section h3 {
+          color: var(--primary-color);
+          margin-bottom: 15px;
+        }
+
+        .to-top-btn {
+          position: fixed;
+          bottom: 80px;
+          right: 20px;
+          background: var(--primary-color);
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
+          cursor: pointer;
+          display: none;
+          z-index: 1000;
+        }
+
         @keyframes fadeOut {
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(10px); }
@@ -228,6 +285,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="https://via.placeholder.com/40" alt="Иконка" class="channel-icon">
             <h2>Telegram Aggregator</h2>
             <p>Найдите лучшие каналы, боты и мини-приложения</p>
         </div>
@@ -249,10 +307,17 @@
         <div id="apps-tab" class="tab-content">
             <div class="loading">Загрузка приложений...</div>
         </div>
+        <div id="help-section" class="help-section">
+            <h3>Справка и поддержка</h3>
+            <p>По всем вопросам обращайтесь:</p>
+            <a href="mailto:ex@mail.ru" class="btn help-btn">Написать на почту</a>
+            <p>Или через Telegram: @aggregator_support</p>
+        </div>
     </div>
 
     <div class="tg-button-container">
         <button class="btn profile-btn" id="profileBtn">Мой профиль</button>
+        <button id="toTopBtn" class="to-top-btn">↑ Наверх</button>
     </div>
 
     <script>
@@ -302,6 +367,7 @@
             html += `
                 <div class="card ${project.is_premium ? 'premium-card' : ''}">
                     ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
+                    <img src="${project.icon || 'https://via.placeholder.com/40'}" class="channel-icon">
                     <h3>${project.name}</h3>
                     <p>Тематика: ${project.theme}</p>
                     ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
@@ -392,6 +458,18 @@
                     tg.close();
                 });
             }
+        });
+
+        window.onscroll = function() {
+          if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            document.getElementById("toTopBtn").style.display = "block";
+          } else {
+            document.getElementById("toTopBtn").style.display = "none";
+          }
+        };
+        
+        document.getElementById("toTopBtn").addEventListener("click", function() {
+          window.scrollTo({top: 0, behavior: 'smooth'});
         });
     </script>
 </body>

@@ -23,6 +23,7 @@ app.add_middleware(
 # Модели данных
 class Project(BaseModel):
     id: int = None
+    icon: Optional[str] = None
     type: str  # 'channel', 'bot' или 'mini_app'
     name: str
     link: str
