@@ -114,7 +114,7 @@
     <script>
         async function loadProjects(type) {
             try {
-                const response = await fetch(`http://your-server-address:8000/projects/?type=${type}`);
+                const response = await fetch(`https://telegram-bot-zgkr.onrender.com/projects/?type=${type}`);
                 const projects = await response.json();
 
                 const tabContent = document.getElementById(`${type}-tab`);
@@ -161,7 +161,7 @@
         async function initUser() {
             const user = tg.initDataUnsafe?.user;
             if (user) {
-                const response = await fetch(`http://your-server-address:8000/users/${user.id}`);
+                const response = await fetch(`https://telegram-bot-zgkr.onrender.com/users/${user.id}`);
                 const userData = await response.json();
 
                 tg.MainButton.setText(`Мой профиль (${userData.stars}★)`);
