@@ -7,6 +7,8 @@ from fastapi import Request
 import hmac
 import hashlib
 
+app = FastAPI()
+
 @app.post("/verify_telegram")
 async def verify_telegram(request: Request):
     data = await request.json()
@@ -26,8 +28,6 @@ async def verify_telegram(request: Request):
         raise HTTPException(status_code=401, detail="Invalid hash")
     
     return {"status": "ok"}
-
-app = FastAPI()
 
 # Настройка CORS
 app.add_middleware(
