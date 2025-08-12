@@ -222,8 +222,8 @@ async def ping():
     return {"status": "ok", "message": "Backend is running"}
 
 @app.on_event("startup")
-async def startup():
-    init_db()  # Ваша функция инициализации БД
+async def startup_db():
+    init_db()  # Ваша существующая функция инициализации
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
