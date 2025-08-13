@@ -70,7 +70,7 @@ def init_db(db_path: str = 'aggregator.db'):
     
     
     # Добавляем тестовые данные, если таблица пуста
-    cursor.execute("SELECT COUNT(*) FROM projects")
+    cursor.execute("SELECT COUNT(*) FROM projects") 
     if cursor.fetchone()[0] == 0:
         test_data = [
             ('channel', 'Хабр', 'https://t.me/habr_com', 'программирование', 1, 100, 122000, 1, get_telegram_avatar('https://t.me/habr_com')),

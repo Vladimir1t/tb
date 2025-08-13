@@ -6,9 +6,18 @@ cursor = conn.cursor()
 
 # Добавляем каналы (без @)
 channels_to_add = [
-    'habr_com', 
-    'moscowmap',
-    'knigajivotnih1'
+    'miptru',
+    'raiznews',
+    'bankrollo',
+    'myachPRO',
+    'fontankaspb',
+    'realmadridcdf',
+    'bestiariy_mif',
+    'ihuntnoobs',
+    'SwamCapital',
+    'truecatharsis',
+    'f1_sports',
+    'deginc17'
     ]
 
 for username in channels_to_add:
