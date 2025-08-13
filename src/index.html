@@ -374,58 +374,58 @@
 
         // Загрузка данных
         async function loadProjects(tabName) {
-    const typeMap = {
-        'channels': 'channel',
-        'bots': 'bot',
-        'apps': 'mini_app'
-    };
-    const apiType = typeMap[tabName];
-    
-    const tabContent = document.getElementById(`${tabName}-tab`);
-    tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+            const typeMap = {
+                'channels': 'channel',
+                'bots': 'bot',
+                'apps': 'mini_app'
+            };
+            const apiType = typeMap[tabName];
+            
+            const tabContent = document.getElementById(`${tabName}-tab`);
+            tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
 
-    try {
-        console.log(`Fetching projects for type: ${apiType}`);
-        const response = await fetch(`${API_URL}/projects/?type=${apiType}`);
+            try {
+                console.log(`Fetching projects for type: ${apiType}`);
+                const response = await fetch(`${API_URL}/projects/?type=${apiType}`);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const projects = await response.json();
+                console.log('Received projects:', projects);
+
+                if (!projects || projects.length === 0) {
+                    tabContent.innerHTML = '<div class="loading">Ничего не найдено</div>';
+                    return;
+                }
+
+                let html = '';
+                projects.forEach(project => {
+                    html += `
+                        <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${project.theme.toLowerCase()}">
+                            ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
+                            <img src="${project.icon || 'https://via.placeholder.com/40'}" class="channel-icon">
+                            <h3>${project.name}</h3>
+                            <p>Тематика: ${project.theme}</p>
+                            ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
+                            <a href="${project.link}" class="btn">Перейти</a>
+                            <div class="likes">❤️ <span>${project.likes || 0}</span></div>
+                        </div>
+                    `;
+                });
+
+                tabContent.innerHTML = html;
+
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                tabContent.innerHTML = `
+                    <div class="loading">
+                        Ошибка: ${error.message}<br>
+                        <button onclick="loadProjects('${tabName}')">Попробовать снова</button>
+                    </div>`;
+            }
         }
-
-        const projects = await response.json();
-        console.log('Received projects:', projects);
-
-        if (!projects || projects.length === 0) {
-            tabContent.innerHTML = '<div class="loading">Ничего не найдено</div>';
-            return;
-        }
-
-        let html = '';
-        projects.forEach(project => {
-            html += `
-                <div class="card ${project.is_premium ? 'premium-card' : ''}">
-                    ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
-                    <img src="${project.icon || 'https://via.placeholder.com/40'}" class="channel-icon">
-                    <h3>${project.name}</h3>
-                    <p>Тематика: ${project.theme}</p>
-                    ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
-                    <a href="${project.link}" class="btn">Перейти</a>
-                    <div class="likes">❤️ <span>${project.likes || 0}</span></div>
-                </div>
-            `;
-        });
-
-        tabContent.innerHTML = html;
-
-    } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        tabContent.innerHTML = `
-            <div class="loading">
-                Ошибка: ${error.message}<br>
-                <button onclick="loadProjects('${tabName}')">Попробовать снова</button>
-            </div>`;
-    }
-}
 
         // Переключение вкладок
         function switchTab(tabName) {
@@ -514,15 +514,20 @@
             const query = this.value.toLowerCase().trim();
             const activeTab = document.querySelector('.tab.active').dataset.tab;
             const tabContent = document.getElementById(`${activeTab}-tab`);
-            const cards = document.querySelectorAll(`#${activeTab}-tab .card`);
+            const cards = tabContent.querySelectorAll('.card');
             
             let visibleCount = 0;
             
             cards.forEach(card => {
                 const title = card.querySelector('h3').textContent.toLowerCase();
-                const theme = card.dataset.theme;
+                const theme = card.querySelector('p').textContent.toLowerCase(); // Ищем в тексте тематики
+                const themeText = theme.replace('тематика:', '').trim(); // Удаляем текст "Тематика:"
+                const hasDataTheme = card.dataset.theme; // Проверяем наличие data-theme
                 
-                const matches = query === '' || title.includes(query) || theme.includes(query);
+                // Ищем совпадения в названии или тематике (используем data-theme если есть, иначе текст из параграфа)
+                const searchTheme = hasDataTheme ? card.dataset.theme : themeText;
+                const matches = query === '' || title.includes(query) || searchTheme.includes(query);
+                
                 card.style.display = matches ? '' : 'none';
                 if (matches) visibleCount++;
             });
