@@ -6,7 +6,7 @@ api_id = 23018155         # число
 api_hash = '59054196d2bcd74bbd30b4415f66bfd2'   # строка
 
 # 2️⃣ Юзернейм канала (без @)
-channel_username = 'CHANNEL_USERNAME_HERE'
+channel_username = 'habr_com'
 
 # 3️⃣ Имя файла для сохранения аватарки
 output_file = 'channel_avatar.jpg'
