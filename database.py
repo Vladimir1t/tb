@@ -1,8 +1,9 @@
 import sqlite3
 from urllib.parse import urlparse
 import requests
+from typing import List, Optional
 
-def get_telegram_avatar(link: str) -> str | None:
+def get_telegram_avatar(link: str) -> Optional[str]:
     """Получает URL аватарки Telegram канала/бота"""
     try:
         parsed = urlparse(link)
