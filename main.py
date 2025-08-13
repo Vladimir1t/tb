@@ -10,7 +10,7 @@ import hashlib
 import requests
 from urllib.parse import urlparse
 import logging
-from database import Database
+from database import init_db
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
