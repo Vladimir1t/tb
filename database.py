@@ -36,7 +36,6 @@ def init_db(db_path: str = 'aggregator.db'):
         type TEXT NOT NULL,
         name TEXT NOT NULL,
         link TEXT NOT NULL,
-        theme TEXT NOT NULL,
         is_premium BOOLEAN DEFAULT 0,
         likes INTEGER DEFAULT 0,
         subscribers INTEGER DEFAULT 0,
@@ -97,7 +96,7 @@ def init_db(db_path: str = 'aggregator.db'):
             icon = get_telegram_avatar(item[2])
             cursor.execute('''
                 INSERT INTO projects 
-                (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
+                (type, name, link, is_premium, likes, subscribers, user_id, icon)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (*item, icon))
     
