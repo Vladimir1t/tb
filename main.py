@@ -48,7 +48,7 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-# Функция для получения аватарки
+# Функция для получения аватарки. пока не работает 
 def get_telegram_avatar(link: str) -> Optional[str]:
     try:
         parsed = urlparse(link)
@@ -109,13 +109,18 @@ def init_db():
         PRIMARY KEY (user_id, task_type)
     )''')
     
-    # Тестовые данные
+    # данные без sqlite
     cursor.execute("SELECT COUNT(*) FROM projects")
     if cursor.fetchone()[0] == 0:
         test_data = [
             ('channel', 'Хабр', 'https://t.me/habr_com', 'technology', 1, 100, 122000, 1, get_telegram_avatar('https://t.me/habr_com')),
             ('channel', 'Новости Москвы', 'https://t.me/moscowmap', 'news', 0, 50, 2730000, 1, get_telegram_avatar('https://t.me/moscowmap')),
-            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1, get_telegram_avatar('https://t.me/weather_bot'))
+            ('channel', 'Книга животных', 'https://t.me/knigajivotnih1', 'animals', 0, 50, 15000, 1, get_telegram_avatar('https://t.me/miptru')),
+            ('channel', 'МФТИ', 'https://t.me/miptru', 'university', 0, 50, 15000, 1, get_telegram_avatar('https://t.me/truecatharsis')),
+            ('channel', 'catharsis', 'https://t.me/truecatharsis', 'art', 0, 50, 15000, 1, get_telegram_avatar('https://t.me/truecatharsis')),
+            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1, get_telegram_avatar('https://t.me/weather_bot')),
+            ('bot', 'Финансовый помощник', 'https://t.me/finance_bot', 'finance', 1, 80, 18000, 1, get_telegram_avatar('https://t.me/finance_bot')),
+            ('mini_app', 'Головоломки', 'https://t.me/puzzle_app', 'games', 0, 20, 8000, 1, get_telegram_avatar('https://t.me/puzzle_app'))
         ]
         
         cursor.executemany('''
