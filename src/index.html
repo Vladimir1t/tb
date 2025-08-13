@@ -308,6 +308,13 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
         }
+
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -504,9 +511,35 @@
         });
 
         document.getElementById('searchInput').addEventListener('input', function() {
-            const query = this.value.toLowerCase();
+            const query = this.value.toLowerCase().trim();
             const activeTab = document.querySelector('.tab.active').dataset.tab;
+            const tabContent = document.getElementById(`${activeTab}-tab`);
             const cards = document.querySelectorAll(`#${activeTab}-tab .card`);
+            
+            let visibleCount = 0;
+            
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const theme = card.dataset.theme;
+                
+                const matches = query === '' || title.includes(query) || theme.includes(query);
+                card.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+            
+            // Показываем сообщение, если ничего не найдено
+            const noResults = tabContent.querySelector('.no-results');
+            if (visibleCount === 0 && query !== '') {
+                if (!noResults) {
+                    const msg = document.createElement('div');
+                    msg.className = 'loading no-results';
+                    msg.textContent = 'Ничего не найдено';
+                    tabContent.appendChild(msg);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
+        });
     
         cards.forEach(card => {
             const title = card.querySelector('h3').textContent.toLowerCase();
