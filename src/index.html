@@ -280,6 +280,34 @@
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(10px); }
         }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 12px;
+            padding: 10px 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        .search-bar input::placeholder {
+            color: var(--light-text);
+        }
+
+        .search-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -296,6 +324,10 @@
             <div class="tab" data-tab="apps">Мини-приложения</div>
         </div>
 
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Поиск..." />
+        </div>
+
         <div id="channels-tab" class="tab-content active">
             <div class="loading">Загрузка каналов...</div>
         </div>
@@ -310,7 +342,6 @@
         <div id="help-section" class="help-section">
             <h3>Справка и поддержка</h3>
             <a href="https://t.me/aggregator_support" class="btn help-btn">Бот поддержки</a>
-            <p>Или через Telegram: @aggregator_support</p>
         </div>
     </div>
 
@@ -469,6 +500,17 @@
         
         document.getElementById("toTopBtn").addEventListener("click", function() {
           window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const activeTab = document.querySelector('.tab.active').dataset.tab;
+            const cards = document.querySelectorAll(`#${activeTab}-tab .card`);
+    
+        cards.forEach(card => {
+            const title = card.querySelector('h3').textContent.toLowerCase();
+            card.style.display = title.includes(query) ? '' : 'none';
+        });
         });
     </script>
 </body>
