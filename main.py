@@ -2,19 +2,25 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
-from typing import List
+from typing import List, Optional
 import uvicorn
 from fastapi import Request
 import hmac
 import hashlib
-from typing import Optional  
+import requests
+from urllib.parse import urlparse
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://telegram-bot-chi-lyart.vercel.app"],
+    allow_origins=["*"],  # В продакшене замените на конкретные домены
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,7 +30,7 @@ app.add_middleware(
 class Project(BaseModel):
     id: int = None
     icon: Optional[str] = None
-    type: str  # 'channel', 'bot' или 'mini_app'
+    type: str
     name: str
     link: str
     theme: str
@@ -34,22 +40,37 @@ class Project(BaseModel):
 
 class User(BaseModel):
     id: int
-    username: Optional[str] = None  # Явно указываем, что может быть None
+    username: Optional[str] = None
     stars: int = 0
     balance: float = 0
-    projects_count: int = 0  # Добавляем отсутствующее поле
+    projects_count: int = 0
 
     class Config:
-        json_encoders = {
-            type(None): lambda _: None  # Корректная сериализация None
-        }
+        json_encoders = {type(None): lambda _: None}
+
+# Функция для получения аватарки
+def get_telegram_avatar(link: str) -> Optional[str]:
+    try:
+        parsed = urlparse(link)
+        if not parsed.netloc.endswith('t.me'):
+            return None
+        
+        username = parsed.path.strip('/')
+        if not username:
+            return None
+        
+        avatar_url = f"https://t.me/i/userpic/320/{username}.jpg"
+        response = requests.head(avatar_url, timeout=3)
+        return avatar_url if response.status_code == 200 else None
+    except Exception as e:
+        logger.error(f"Error getting avatar: {str(e)}")
+        return None
 
 # Инициализация БД
 def init_db():
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     
-    # Create tables if they don't exist
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,9 +81,9 @@ def init_db():
         is_premium BOOLEAN DEFAULT 0,
         likes INTEGER DEFAULT 0,
         subscribers INTEGER DEFAULT 0,
-        user_id INTEGER DEFAULT 1
-    )
-    ''')
+        user_id INTEGER DEFAULT 1,
+        icon TEXT
+    )''')
     
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
@@ -70,78 +91,64 @@ def init_db():
         username TEXT,
         stars INTEGER DEFAULT 0,
         balance REAL DEFAULT 0
-    )
-    ''')
+    )''')
     
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS tasks (
         user_id INTEGER,
         task_type TEXT,
         completed BOOLEAN DEFAULT 0,
-        PRIMARY KEY (user_id, task_type),
-        FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-    ''')
+        PRIMARY KEY (user_id, task_type)
+    )''')
     
-    # Add test data only if tables are empty
+    # Тестовые данные
     cursor.execute("SELECT COUNT(*) FROM projects")
     if cursor.fetchone()[0] == 0:
-        test_projects = [
+        test_data = [
             ('channel', 'Хабр', 'https://t.me/habr_com', 'technology', 1, 100, 122000, 1),
             ('channel', 'Новости Москвы', 'https://t.me/moscowmap', 'news', 0, 50, 2730000, 1),
-            ('channel', 'Маркетинг', 'https://t.me/marketing', 'business', 0, 50, 15000, 1),
-            ('channel', 'Книга животных', 'https://t.me/knigajivotnih1', 'animals', 0, 50, 15000, 1),
-            ('channel', 'МФТИ', 'https://t.me/miptru', 'university', 0, 50, 15000, 1),
-            ('channel', 'catharsis', 'https://t.me/truecatharsis', 'art', 0, 50, 15000, 1),
-            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1),
-            ('bot', 'Финансовый помощник', 'https://t.me/finance_bot', 'finance', 1, 80, 18000, 1),
-            ('mini_app', 'Головоломки', 'https://t.me/puzzle_app', 'games', 0, 20, 8000, 1)
+            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1)
         ]
-        cursor.executemany('''
-            INSERT INTO projects 
-            (type, name, link, theme, is_premium, likes, subscribers, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', test_projects)
+        
+        for item in test_data:
+            icon = get_telegram_avatar(item[2])
+            cursor.execute('''
+                INSERT INTO projects 
+                (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (*item, icon))
     
     conn.commit()
     conn.close()
 
 init_db()
 
-# Валидация данных Telegram
+# Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
     try:
-        secret_key = hmac.new(
+        secret = hmac.new(
             key=hashlib.sha256(token.encode()).digest(),
             msg=init_data.encode(),
             digestmod=hashlib.sha256
         )
-        return secret_key.hexdigest()
+        return secret.hexdigest()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# API endpoints
+# API Endpoints
 @app.get("/projects/", response_model=List[Project])
 async def get_projects(type: str = None, theme: str = None):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # Нормализуем тип запроса
-    type_mapping = {
-        'channels': 'channel',
-        'bots': 'bot',
-        'apps': 'mini_app'
-    }
-    if type in type_mapping:
-        type = type_mapping[type]
-    
     query = "SELECT * FROM projects"
     params = []
     
     if type:
+        type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
         query += " WHERE type = ?"
-        params.append(type)
+        params.append(type_mapping.get(type, type))
         if theme:
             query += " AND theme = ?"
             params.append(theme)
@@ -150,34 +157,25 @@ async def get_projects(type: str = None, theme: str = None):
         params.append(theme)
     
     query += " ORDER BY is_premium DESC, likes DESC"
-    
     cursor.execute(query, params)
-    projects = cursor.fetchall()
+    projects = [dict(row) for row in cursor.fetchall()]
     conn.close()
     
-    if not projects:
-        print(f"No projects found for type: {type}, theme: {theme}")
-    else:
-        print(f"Found {len(projects)} projects for type: {type}, theme: {theme}")
-    
-    return [dict(project) for project in projects]
+    return projects
 
 @app.post("/projects/", response_model=Project)
 async def create_project(project: Project, request: Request):
-    init_data = request.headers.get('X-Telegram-Init-Data')
-    if not init_data:
-        raise HTTPException(status_code=401, detail="Telegram auth required")
+    if not request.headers.get('X-Telegram-Init-Data'):
+        raise HTTPException(status_code=401, detail="Auth required")
     
-    # В реальном приложении нужно проверить init_data
-    # validate_telegram_data("YOUR_BOT_TOKEN", init_data)
+    project.icon = project.icon or get_telegram_avatar(project.link)
     
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
-    
     cursor.execute('''
-    INSERT INTO projects (type, name, link, theme, is_premium)
-    VALUES (?, ?, ?, ?, ?)
-    ''', (project.type, project.name, project.link, project.theme, project.is_premium))
+        INSERT INTO projects (type, name, link, theme, is_premium, icon)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (project.type, project.name, project.link, project.theme, project.is_premium, project.icon))
     
     project_id = cursor.lastrowid
     conn.commit()
@@ -189,53 +187,50 @@ async def create_project(project: Project, request: Request):
 async def get_user(user_id: int):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    
-    if not user:
-        cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
-        conn.commit()
+    try:
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         user = cursor.fetchone()
-    
-    # Получаем количество проектов пользователя
-    cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
-    projects_count = cursor.fetchone()[0]
-    
-    conn.close()
-    
-    user_dict = dict(user)
-    user_dict['projects_count'] = projects_count
-    return user_dict
+        
+        if not user:
+            cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
+            conn.commit()
+            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            user = cursor.fetchone()
+        
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
+        projects_count = cursor.fetchone()[0]
+        
+        return {
+            "id": user["id"],
+            "username": user["username"],
+            "stars": user["stars"],
+            "balance": user["balance"],
+            "projects_count": projects_count
+        }
+    finally:
+        conn.close()
 
 @app.post("/users/{user_id}/complete_task")
 async def complete_task(user_id: int, task_type: str, request: Request):
-    init_data = request.headers.get('X-Telegram-Init-Data')
-    if not init_data:
-        raise HTTPException(status_code=401, detail="Telegram auth required")
+    if not request.headers.get('X-Telegram-Init-Data'):
+        raise HTTPException(status_code=401, detail="Auth required")
     
-    rewards = {
-        'banner': 5,
-        'subscribe': 3,
-        'invite': 10
-    }
-    
+    rewards = {'banner': 5, 'subscribe': 3, 'invite': 10}
     if task_type not in rewards:
         raise HTTPException(status_code=400, detail="Invalid task type")
     
     conn = sqlite3.connect('aggregator.db')
-    cursor = conn.cursor()
-    
     try:
+        cursor = conn.cursor()
         cursor.execute('''
-        INSERT OR REPLACE INTO tasks (user_id, task_type, completed)
-        VALUES (?, ?, 1)
+            INSERT OR REPLACE INTO tasks (user_id, task_type, completed)
+            VALUES (?, ?, 1)
         ''', (user_id, task_type))
         
         cursor.execute('''
-        UPDATE users SET stars = stars + ? WHERE id = ?
+            UPDATE users SET stars = stars + ? WHERE id = ?
         ''', (rewards[task_type], user_id))
         
         conn.commit()
@@ -246,55 +241,22 @@ async def complete_task(user_id: int, task_type: str, request: Request):
     finally:
         conn.close()
 
+# Отладочные endpoints
 @app.get("/ping")
 async def ping():
     return {"status": "ok", "message": "Backend is running"}
 
-@app.get("/users/{user_id}", response_model=User)
-async def get_user(user_id: int):
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT id, username, stars, balance FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
-        
-        if not user:
-            cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
-            conn.commit()
-            cursor.execute("SELECT id, username, stars, balance FROM users WHERE id = ?", (user_id,))
-            user = cursor.fetchone()
-        
-        cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = ?", (user_id,))
-        projects_count = cursor.fetchone()[0]
-        
-        return {
-            "id": user["id"],
-            "username": user["username"] if user["username"] else None,
-            "stars": user["stars"],
-            "balance": user["balance"],
-            "projects_count": projects_count
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-        
 @app.get("/debug/db")
 async def debug_db():
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
-    
-    # Check tables exist
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    tables = cursor.fetchall()
+    tables = [row[0] for row in cursor.fetchall()]
     
-    # Count rows in each table
     counts = {}
     for table in tables:
-        table_name = table[0]
-        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
-        counts[table_name] = cursor.fetchone()[0]
+        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+        counts[table] = cursor.fetchone()[0]
     
     conn.close()
     return {"tables": tables, "counts": counts}
@@ -304,16 +266,14 @@ async def debug_projects():
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
     cursor.execute("SELECT * FROM projects")
-    projects = cursor.fetchall()
-    
+    projects = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    return [dict(project) for project in projects]
+    return projects
 
 @app.on_event("startup")
 async def startup_db():
-    init_db()  # Ваша существующая функция инициализации
+    init_db()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
