@@ -10,6 +10,7 @@ import hashlib
 import requests
 from urllib.parse import urlparse
 import logging
+from database import Database
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +21,7 @@ app = FastAPI()
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене замените на конкретные домены
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,90 +49,7 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-# Функция для получения аватарки. пока не работает 
-def get_telegram_avatar(link: str) -> Optional[str]:
-    try:
-        parsed = urlparse(link)
-        if not parsed.netloc.endswith('t.me'):
-            return None
-        
-        username = parsed.path.strip('/')
-        if not username:
-            return None
-        
-        avatar_url = f"https://t.me/i/userpic/320/{username}.jpg"
-        response = requests.head(avatar_url, timeout=3)
-        return avatar_url if response.status_code == 200 else None
-    except Exception as e:
-        logger.error(f"Error getting avatar: {str(e)}")
-        return None
-
-# Инициализация БД
-def init_db():
-    conn = sqlite3.connect('aggregator.db')
-    cursor = conn.cursor()
-    
-    # Создаем таблицы (если они не существуют)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
-        name TEXT NOT NULL,
-        link TEXT NOT NULL,
-        theme TEXT NOT NULL,
-        is_premium BOOLEAN DEFAULT 0,
-        likes INTEGER DEFAULT 0,
-        subscribers INTEGER DEFAULT 0,
-        user_id INTEGER DEFAULT 1,
-        icon TEXT
-    )''')
-    
-    # Проверяем существование столбца icon (для уже созданных таблиц)
-    try:
-        cursor.execute("SELECT icon FROM projects LIMIT 1")
-    except sqlite3.OperationalError:
-        cursor.execute('ALTER TABLE projects ADD COLUMN icon TEXT')
-    
-    # Остальные таблицы...
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        username TEXT,
-        stars INTEGER DEFAULT 0,
-        balance REAL DEFAULT 0
-    )''')
-    
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS tasks (
-        user_id INTEGER,
-        task_type TEXT,
-        completed BOOLEAN DEFAULT 0,
-        PRIMARY KEY (user_id, task_type)
-    )''')
-    
-    # данные без sqlite
-    cursor.execute("SELECT COUNT(*) FROM projects")
-    if cursor.fetchone()[0] == 0:
-        test_data = [
-            ('channel', 'Хабр', 'https://t.me/habr_com', 'technology', 1, 100, 122000, 1, get_telegram_avatar('https://t.me/habr_com')),
-            ('channel', 'Новости Москвы', 'https://t.me/moscowmap', 'news', 0, 50, 2730000, 1, get_telegram_avatar('https://t.me/moscowmap')),
-            ('channel', 'Книга животных', 'https://t.me/knigajivotnih1', 'animals', 0, 50, 15000, 1, get_telegram_avatar('https://t.me/miptru')),
-            ('channel', 'МФТИ', 'https://t.me/miptru', 'university', 0, 50, 15000, 1, get_telegram_avatar('https://t.me/truecatharsis')),
-            ('channel', 'catharsis', 'https://t.me/truecatharsis', 'art', 0, 50, 15000, 1, get_telegram_avatar('https://t.me/truecatharsis')),
-            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1, get_telegram_avatar('https://t.me/weather_bot')),
-            ('bot', 'Финансовый помощник', 'https://t.me/finance_bot', 'finance', 1, 80, 18000, 1, get_telegram_avatar('https://t.me/finance_bot')),
-            ('mini_app', 'Головоломки', 'https://t.me/puzzle_app', 'games', 0, 20, 8000, 1, get_telegram_avatar('https://t.me/puzzle_app'))
-        ]
-        
-        cursor.executemany('''
-            INSERT INTO projects 
-            (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', test_data)
-    
-    conn.commit()
-    conn.close()
-
+# Bнициализация базы данных в database.py
 init_db()
 
 # Валидация Telegram WebApp
