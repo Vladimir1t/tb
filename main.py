@@ -71,6 +71,7 @@ def init_db():
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     
+    # Создаем таблицы (если они не существуют)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,6 +86,13 @@ def init_db():
         icon TEXT
     )''')
     
+    # Проверяем существование столбца icon (для уже созданных таблиц)
+    try:
+        cursor.execute("SELECT icon FROM projects LIMIT 1")
+    except sqlite3.OperationalError:
+        cursor.execute('ALTER TABLE projects ADD COLUMN icon TEXT')
+    
+    # Остальные таблицы...
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
@@ -105,18 +113,16 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM projects")
     if cursor.fetchone()[0] == 0:
         test_data = [
-            ('channel', 'Хабр', 'https://t.me/habr_com', 'technology', 1, 100, 122000, 1),
-            ('channel', 'Новости Москвы', 'https://t.me/moscowmap', 'news', 0, 50, 2730000, 1),
-            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1)
+            ('channel', 'Хабр', 'https://t.me/habr_com', 'technology', 1, 100, 122000, 1, get_telegram_avatar('https://t.me/habr_com')),
+            ('channel', 'Новости Москвы', 'https://t.me/moscowmap', 'news', 0, 50, 2730000, 1, get_telegram_avatar('https://t.me/moscowmap')),
+            ('bot', 'Погодный Бот', 'https://t.me/weather_bot', 'utility', 0, 30, 5000, 1, get_telegram_avatar('https://t.me/weather_bot'))
         ]
         
-        for item in test_data:
-            icon = get_telegram_avatar(item[2])
-            cursor.execute('''
-                INSERT INTO projects 
-                (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (*item, icon))
+        cursor.executemany('''
+            INSERT INTO projects 
+            (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', test_data)
     
     conn.commit()
     conn.close()
