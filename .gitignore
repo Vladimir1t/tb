@@ -1,3 +1,31 @@
+# Базы данных
+*.sqlite3
 database.db
 aggregator.db
-channals.db
+channels.db
+
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# Файлы сессий Telethon (КРИТИЧЕСКИ ВАЖНО!)
+*.session
+*.session-journal
+
+# Папка с загруженными файлами (аватарки)
+media/
+
+# Кэш и скомпилированные файлы Python
+__pycache__/
+*.pyc
+
+# Секреты и переменные окружения
+.env
+
+# Логи
+*.log
+
+# Настройки IDE
+.idea/
+.vscode/

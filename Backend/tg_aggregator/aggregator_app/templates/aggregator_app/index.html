@@ -320,7 +320,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://via.placeholder.com/40" alt="Иконка" class="channel-icon">
+            <img src="${project.icon ? project.icon : 'https://via.placeholder.com/40'}" class="channel-icon">
             <h2>Telegram Aggregator</h2>
             <p>Найдите лучшие каналы, боты и мини-приложения</p>
         </div>
@@ -364,7 +364,7 @@
         tg.expand();
         
         // Основные переменные
-        const API_URL = 'https://telegram-bot-zgkr.onrender.com';
+        const API_URL = '';
         let currentUser = null;
 
         // DOM элементы
