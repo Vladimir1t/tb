@@ -1,6 +1,5 @@
 FROM python:3.9-slim
 
-# Устанавливаем системные зависимости для SQLite
 RUN apt-get update && apt-get install -y \
     sqlite3 \
     libsqlite3-dev \
@@ -8,17 +7,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Копируем зависимости отдельно для кэширования
 COPY requirements.txt .
 
-# Устанавливаем Python-зависимости
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Копируем остальные файлы
 COPY . .
 
-# Инициализируем БД (если нужно)
 RUN if [ ! -f "aggregator.db" ]; then \
         sqlite3 aggregator.db "VACUUM;"; \
     fi
