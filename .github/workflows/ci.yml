@@ -20,13 +20,25 @@ jobs:
       - name: Build Docker image
         run: docker build -t your-app-name .
 
-      - name: Test Docker image
+      - name: Test Docker container
         run: |
           docker run -d --name test-container -p 8000:8000 your-app-name
-          sleep 10  # Даем время для запуска сервера
-          docker ps | grep test-container
-          docker logs test-container
-          # Проверяем, что сервер запустился
-          docker exec test-container curl -s http://localhost:8000 | grep -q "some-expected-response" || exit 1
+          
+          sleep 10
+          
+          docker ps | grep test-container || exit 1
+          
+          # Проверяем логи на ошибки (если есть CRITICAL/ERROR — завершаемся с ошибкой)
+          if docker logs test-container 2>&1 | grep -E "CRITICAL|ERROR"; then
+            echo "❌ Found errors in container logs!"
+            exit 1
+          fi
+          
+          # Делаем тестовый HTTP-запрос (замените `/` на нужный эндпоинт)
+          if ! docker exec test-container curl -s http://localhost:8000/; then
+            echo "❌ Server is not responding!"
+            exit 1
+          fi
+          
           docker stop test-container
           docker rm test-container
