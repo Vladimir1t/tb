@@ -14,10 +14,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
+WORKDIR /app/Backend
+
 RUN if [ ! -f "aggregator.db" ]; then \
         sqlite3 aggregator.db "VACUUM;"; \
     fi
 
 EXPOSE 8000
 
+# Запускаем Uvicorn из папки Backend
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
