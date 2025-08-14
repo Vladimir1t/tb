@@ -24,17 +24,18 @@ jobs:
         run: |
           docker run -d --name test-container -p 8000:8000 your-app-name
           
+          docker exec test-container apt-get update
+          docker exec test-container apt-get install -y curl
+          
           sleep 10
           
           docker ps | grep test-container || exit 1
           
-          # Проверяем логи на ошибки (если есть CRITICAL/ERROR — завершаемся с ошибкой)
           if docker logs test-container 2>&1 | grep -E "CRITICAL|ERROR"; then
             echo "❌ Found errors in container logs!"
             exit 1
           fi
           
-          # Делаем тестовый HTTP-запрос (замените `/` на нужный эндпоинт)
           if ! docker exec test-container curl -s http://localhost:8000/; then
             echo "❌ Server is not responding!"
             exit 1
