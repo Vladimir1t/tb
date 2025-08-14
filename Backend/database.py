@@ -25,11 +25,9 @@ def init_db(db_path: str = 'aggregator.db'):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # Сначала проверяем существование столбца icon
     cursor.execute("PRAGMA table_info(projects)")
     columns = [column[1] for column in cursor.fetchall()]
     
-    # Создаем таблицы с учетом возможного существования
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,8 +66,6 @@ def init_db(db_path: str = 'aggregator.db'):
         PRIMARY KEY (user_id, task_type)
     )''')
     
-    
-    # Добавляем тестовые данные, если таблица пуста
     cursor.execute("SELECT COUNT(*) FROM projects") 
     if cursor.fetchone()[0] == 0:
         test_data = [
