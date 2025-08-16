@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORS_ALLOWED_ORIGINS = [
+    "https://telegram-bot-chi-lyart.vercel.app",
+]
 
 # Application definition
 
@@ -52,7 +55,6 @@ MIDDLEWARE = [
 
     # Добавьте CorsMiddleware как можно выше, особенно перед CommonMiddleware
     'corsheaders.middleware.CorsMiddleware',
-
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
