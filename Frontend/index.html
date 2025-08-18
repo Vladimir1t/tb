@@ -146,11 +146,29 @@
             font-weight: bold;
         }
 
+        .channel-icon-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .channel-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .channel-info {
+            flex: 1;
+        }
+
         .card h3 {
             font-size: 1.2rem;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             color: var(--primary-color);
-            padding-right: 40px;
         }
 
         .card p {
@@ -220,17 +238,6 @@
             transform: scale(1.05);
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-        .channel-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-            float: left;
-        }
-
-        .card h3 {
-          padding-top: 8px; /* Добавим отступ для выравнивания с иконкой */
-        }
 
         .loading {
             text-align: center;
@@ -243,37 +250,37 @@
         }
 
         .help-section {
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 14px;
-          margin-top: 30px;
-          text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 30px;
+            text-align: center;
         }
 
         .help-btn {
-          background: #6c757d;
-          margin: 15px auto;
+            background: #6c757d;
+            margin: 15px auto;
         }
 
         .help-section h3 {
-          color: var(--primary-color);
-          margin-bottom: 15px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
         }
 
         .to-top-btn {
-          position: fixed;
-          bottom: 80px;
-          right: 20px;
-          background: var(--primary-color);
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          font-size: 20px;
-          cursor: pointer;
-          display: none;
-          z-index: 1000;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
         }
 
         @keyframes fadeOut {
@@ -320,7 +327,6 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://via.placeholder.com/40" alt="Иконка" class="channel-icon">
             <h2>Telegram Aggregator</h2>
             <p>Найдите лучшие каналы, боты и мини-приложения</p>
         </div>
@@ -346,12 +352,13 @@
         <div id="apps-tab" class="tab-content">
             <div class="loading">Загрузка приложений...</div>
         </div>
+
         <div id="help-section" class="help-section">
             <h3>Справка и поддержка</h3>
             <a href="https://t.me/aggregator_support" class="btn help-btn">Бот поддержки</a>
-			<a href=" " class="btn help-btn">FAQ</a>
+            <a href="#" class="btn help-btn">FAQ</a>
         </div>
-        </div>
+    </div>
 
     <div class="tg-button-container">
         <button class="btn profile-btn" id="profileBtn">Мой профиль</button>
@@ -371,6 +378,20 @@
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const profileBtn = document.getElementById('profileBtn');
+        const toTopBtn = document.getElementById('toTopBtn');
+        const searchInput = document.getElementById('searchInput');
+
+        // Функция для создания URL из BLOB
+        function createBlobUrl(blobData) {
+            try {
+                if (!blobData) return null;
+                const blob = new Blob([new Uint8Array(blobData)], {type: 'image/jpeg'});
+                return URL.createObjectURL(blob);
+            } catch (e) {
+                console.error('Error creating blob URL:', e);
+                return null;
+            }
+        }
 
         // Загрузка данных
         async function loadProjects(tabName) {
@@ -385,29 +406,44 @@
             tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
 
             try {
-                console.log(`Fetching projects for type: ${apiType}`);
                 const response = await fetch(`${API_URL}/projects/?type=${apiType}`);
-
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const projects = await response.json();
-                console.log('Received projects:', projects);
 
                 if (!projects || projects.length === 0) {
-                    tabContent.innerHTML = '<div class="loading">Ничего не найдено</div>';
+                    tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
                     return;
                 }
 
                 let html = '';
                 projects.forEach(project => {
+                    // Обработка иконки
+                    let iconUrl = 'https://via.placeholder.com/48';
+                    if (project.icon) {
+                        if (project.icon.byteLength) {
+                            // Если это BLOB данные
+                            const blobUrl = createBlobUrl(project.icon);
+                            if (blobUrl) iconUrl = blobUrl;
+                        } else if (typeof project.icon === 'string') {
+                            // Если это URL строкой
+                            iconUrl = project.icon;
+                        }
+                    }
+
                     html += `
                         <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${project.theme.toLowerCase()}">
                             ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
-                            <img src="${project.icon || 'https://via.placeholder.com/40'}" class="channel-icon">
-                            <h3>${project.name}</h3>
-                            <p>Тематика: ${project.theme}</p>
+                            <div class="channel-icon-container">
+                                <img src="${iconUrl}" class="channel-icon" alt="${project.name}">
+                                <div class="channel-info">
+                                    <h3>${project.name}</h3>
+                                    <p>Тематика: ${project.theme}</p>
+                                </div>
+                            </div>
                             ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
                             <a href="${project.link}" class="btn">Перейти</a>
                             <div class="likes">❤️ <span>${project.likes || 0}</span></div>
@@ -483,34 +519,8 @@
             }
         });
 
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', () => {
-            // Первая загрузка (используем tab name, а не type)
-            loadProjects('channels');
-            loadUserProfile();
-            
-            // Настройка кнопки назад в Telegram
-            if (tg.platform !== 'unknown') {
-                tg.BackButton.show();
-                tg.BackButton.onClick(() => {
-                    tg.close();
-                });
-            }
-        });
-
-        window.onscroll = function() {
-          if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-            document.getElementById("toTopBtn").style.display = "block";
-          } else {
-            document.getElementById("toTopBtn").style.display = "none";
-          }
-        };
-        
-        document.getElementById("toTopBtn").addEventListener("click", function() {
-          window.scrollTo({top: 0, behavior: 'smooth'});
-        });
-
-        document.getElementById('searchInput').addEventListener('input', function() {
+        // Поиск
+        searchInput.addEventListener('input', function() {
             const query = this.value.toLowerCase().trim();
             const activeTab = document.querySelector('.tab.active').dataset.tab;
             const tabContent = document.getElementById(`${activeTab}-tab`);
@@ -520,13 +530,8 @@
             
             cards.forEach(card => {
                 const title = card.querySelector('h3').textContent.toLowerCase();
-                const theme = card.querySelector('p').textContent.toLowerCase(); // Ищем в тексте тематики
-                const themeText = theme.replace('тематика:', '').trim(); // Удаляем текст "Тематика:"
-                const hasDataTheme = card.dataset.theme; // Проверяем наличие data-theme
-                
-                // Ищем совпадения в названии или тематике (используем data-theme если есть, иначе текст из параграфа)
-                const searchTheme = hasDataTheme ? card.dataset.theme : themeText;
-                const matches = query === '' || title.includes(query) || searchTheme.includes(query);
+                const theme = card.dataset.theme.toLowerCase();
+                const matches = query === '' || title.includes(query) || theme.includes(query);
                 
                 card.style.display = matches ? '' : 'none';
                 if (matches) visibleCount++;
@@ -537,12 +542,40 @@
             if (visibleCount === 0 && query !== '') {
                 if (!noResults) {
                     const msg = document.createElement('div');
-                    msg.className = 'loading no-results';
+                    msg.className = 'no-results';
                     msg.textContent = 'Ничего не найдено';
                     tabContent.appendChild(msg);
                 }
             } else if (noResults) {
                 noResults.remove();
+            }
+        });
+
+        // Кнопка "Наверх"
+        window.onscroll = function() {
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                toTopBtn.style.display = "block";
+            } else {
+                toTopBtn.style.display = "none";
+            }
+        };
+        
+        toTopBtn.addEventListener('click', function() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            // Первая загрузка
+            loadProjects('channels');
+            loadUserProfile();
+            
+            // Настройка кнопки назад в Telegram
+            if (tg.platform !== 'unknown') {
+                tg.BackButton.show();
+                tg.BackButton.onClick(() => {
+                    tg.close();
+                });
             }
         });
     </script>
