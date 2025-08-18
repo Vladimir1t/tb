@@ -4,12 +4,19 @@ import requests
 from typing import List, Optional
 import asyncio
 from telethon import TelegramClient
+import asyncio
+from threading import Thread
 
 # Настройки Telegram API
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
 SESSION_NAME = 'session_1'
 DB_NAME = 'aggregator.db'
+
+def run_async(coro):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 async def get_avatar_bytes(username: str) -> Optional[bytes]:
     """Асинхронно получает аватарку канала"""
@@ -92,7 +99,7 @@ def init_db(db_path: str = DB_NAME):
         
         for item in test_data:
             # save_avatar_to_db(item[0], item[8])
-            avatar_bytes = asyncio.run(get_avatar_bytes(item[-1]))
+            avatar_bytes = run_async(get_avatar_bytes(item[-1]))
 
             cursor.execute('''
                 INSERT INTO projects 
