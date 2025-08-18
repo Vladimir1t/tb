@@ -3,7 +3,6 @@ uvicorn==0.27.0
 python-multipart==0.0.9
 requests==2.31.0
 python-dotenv==1.0.0
-sqlite3==3.42.0
 telethon==1.28.5
 aiofiles==23.2.1
 python-dateutil==2.8.2
