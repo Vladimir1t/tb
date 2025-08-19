@@ -49,8 +49,10 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
+# Bнициализация базы данных в database.py
 init_db()
 
+# Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
     try:
         secret = hmac.new(
@@ -109,16 +111,6 @@ async def create_project(project: Project, request: Request):
     conn.close()
     
     return {**project.dict(), "id": project_id}
-
-@app.get("/projects/{project_id}/icon")
-async def get_project_icon(project_id: int):
-    project = get_project_by_id(project_id)
-    if project and project.icon:
-        return Response(
-            content=project.icon,
-            media_type="image/png" 
-        )
-    return Response(status_code=404)
 
 @app.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: int):
