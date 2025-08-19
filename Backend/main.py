@@ -91,8 +91,14 @@ async def get_projects(type: str = None, theme: str = None):
     cursor.execute(query, params)
     projects = [dict(row) for row in cursor.fetchall()]
     conn.close()
+
+    # конвертируем blob → base64
+    for p in projects:
+        if p["icon"]:
+            p["icon"] = f"data:image/png;base64,{base64.b64encode(p['icon']).decode('utf-8')}"
     
     return projects
+
 
 @app.post("/projects/", response_model=Project)
 async def create_project(project: Project, request: Request):
