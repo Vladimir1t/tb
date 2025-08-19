@@ -72,10 +72,10 @@ async def get_projects(type: str = None, theme: str = None):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
+
     query = "SELECT * FROM projects"
     params = []
-    
+
     if type:
         type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
         query += " WHERE type = ?"
@@ -86,17 +86,17 @@ async def get_projects(type: str = None, theme: str = None):
     elif theme:
         query += " WHERE theme = ?"
         params.append(theme)
-    
+
     query += " ORDER BY is_premium DESC, likes DESC"
     cursor.execute(query, params)
     projects = [dict(row) for row in cursor.fetchall()]
     conn.close()
 
-    # конвертируем blob → base64
+    # 👇 конвертация icon → base64
     for p in projects:
         if p["icon"]:
             p["icon"] = f"data:image/png;base64,{base64.b64encode(p['icon']).decode('utf-8')}"
-    
+
     return projects
 
 
