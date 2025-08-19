@@ -1,6 +1,4 @@
 from fastapi import FastAPI, HTTPException
-import base64
-from fastapi import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
@@ -14,11 +12,13 @@ from urllib.parse import urlparse
 import logging
 from database import init_db
 
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -27,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Модели данных
 class Project(BaseModel):
     id: int = None
     icon: Optional[bytes] = None
@@ -86,9 +87,6 @@ async def get_projects(type: str = None, theme: str = None):
     cursor.execute(query, params)
     projects = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    for project in projects:
-        if project.icon and isinstance(project.icon, bytes):
-            project.icon = f"data:image/png;base64,{base64.b64encode(project.icon).decode('utf-8')}"
     
     return projects
 
@@ -102,11 +100,9 @@ async def create_project(project: Project, request: Request):
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     cursor.execute('''
-    INSERT INTO projects (type, name, link, theme, is_premium, icon)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', (project.type, project.name, project.link, project.theme, project.is_premium,
-    sqlite3.Binary(project.icon) if project.icon else None))
-
+        INSERT INTO projects (type, name, link, theme, is_premium, icon)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (project.type, project.name, project.link, project.theme, project.is_premium, project.icon))
     
     project_id = cursor.lastrowid
     conn.commit()

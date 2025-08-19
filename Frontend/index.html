@@ -415,11 +415,18 @@
                     return;
                 }
 
-                let iconUrl = 'https://via.placeholder.com/48';
                 let html = '';
                 projects.forEach(project => {
+                    let iconUrl = 'https://via.placeholder.com/48';
                     if (project.icon) {
-                        iconUrl = project.icon; // это уже "data:image/png;base64,..."
+                        if (project.icon.byteLength) {
+                            // Если это BLOB данные
+                            const blobUrl = createBlobUrl(project.icon);
+                            if (blobUrl) iconUrl = blobUrl;
+                        } else if (typeof project.icon === 'string') {
+                            // Если это URL строкой
+                            iconUrl = project.icon;
+                        }
                     }
 
                     html += `
@@ -501,7 +508,7 @@
 
         profileBtn.addEventListener('click', () => {
             if (currentUser) {
-                tg.showAlert(`Ваш профиль:\n★ Звезды: ${currentUser.stars} \n💰 Баланс: ${currentUser.balance} руб.`);
+                tg.showAlert(`Ваш профиль: \n★ Звезды: ${currentUser.stars} \n💰 Баланс: ${currentUser.balance} руб.`);
             } else {
                 tg.showAlert('Профиль не загружен. Попробуйте позже.');
             }
@@ -552,10 +559,13 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
 
+        // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
+            // Первая загрузка
             loadProjects('channels');
             loadUserProfile();
             
+            // Настройка кнопки назад в Telegram
             if (tg.platform !== 'unknown') {
                 tg.BackButton.show();
                 tg.BackButton.onClick(() => {
