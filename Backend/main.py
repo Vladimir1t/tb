@@ -30,7 +30,7 @@ app.add_middleware(
 # Модели данных
 class Project(BaseModel):
     id: int = None
-    icon: Optional[str] = None
+    icon: Optional[bytes] = None
     type: str
     name: str
     link: str
@@ -111,6 +111,16 @@ async def create_project(project: Project, request: Request):
     conn.close()
     
     return {**project.dict(), "id": project_id}
+
+@app.get("/projects/{project_id}/icon")
+async def get_project_icon(project_id: int):
+    project = get_project_by_id(project_id)
+    if project and project.icon:
+        return Response(
+            content=project.icon,
+            media_type="image/png" 
+        )
+    return Response(status_code=404)
 
 @app.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: int):
