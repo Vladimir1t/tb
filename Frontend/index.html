@@ -417,7 +417,8 @@
 
                 let html = '';
                 projects.forEach(project => {
-                    let iconUrl = 'https://via.placeholder.com/48';
+                    let iconUrl = `/projects/${project.id}/icon`;  // API отдаёт blob
+                    img.src = iconUrl;
                     if (project.icon) {
                         iconUrl = project.icon;  // уже готовая строка
                     }
