@@ -99,6 +99,16 @@ async def get_projects(type: str = None, theme: str = None):
 
     return projects
 
+@app.get("/projects/{project_id}/icon")
+async def get_project_icon(project_id: int):
+    conn = sqlite3.connect("aggregator.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT icon FROM projects WHERE id = ?", (project_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row and row[0]:
+        return Response(content=row[0], media_type="image/png")
+    return Response(status_code=404)
 
 @app.post("/projects/", response_model=Project)
 async def create_project(project: Project, request: Request):
