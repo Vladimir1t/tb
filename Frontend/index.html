@@ -366,15 +366,12 @@
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Основные переменные
         const API_URL = 'https://telegram-bot-zgkr.onrender.com';
         let currentUser = null;
 
-        // DOM элементы
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const profileBtn = document.getElementById('profileBtn');
@@ -393,7 +390,6 @@
             }
         }
 
-        // Загрузка данных
         async function loadProjects(tabName) {
             const typeMap = {
                 'channels': 'channel',
@@ -421,7 +417,6 @@
 
                 let html = '';
                 projects.forEach(project => {
-                    // Обработка иконки
                     let iconUrl = 'https://via.placeholder.com/48';
                     if (project.icon) {
                         if (project.icon.byteLength) {
@@ -513,7 +508,7 @@
 
         profileBtn.addEventListener('click', () => {
             if (currentUser) {
-                tg.showAlert(`Ваш профиль:\n★ Звезды: ${currentUser.stars}\n💰 Баланс: ${currentUser.balance} руб.`);
+                tg.showAlert(`Ваш профиль:\n★ Звезды: ${currentUser.stars} \n💰 Баланс: ${currentUser.balance} руб.`);
             } else {
                 tg.showAlert('Профиль не загружен. Попробуйте позже.');
             }
