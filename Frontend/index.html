@@ -419,14 +419,7 @@
                 projects.forEach(project => {
                     let iconUrl = 'https://via.placeholder.com/48';
                     if (project.icon) {
-                        if (project.icon.byteLength) {
-                            // Если это BLOB данные
-                            const blobUrl = createBlobUrl(project.icon);
-                            if (blobUrl) iconUrl = blobUrl;
-                        } else if (typeof project.icon === 'string') {
-                            // Если это URL строкой
-                            iconUrl = project.icon;
-                        }
+                        iconUrl = project.icon; // это уже "data:image/png;base64,..."
                     }
 
                     html += `
