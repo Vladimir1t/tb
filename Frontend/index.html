@@ -1,69 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Projects</title>
-</head>
-<body>
-  <h1>Проекты</h1>
-  <div id="projects"></div>
-
-  <script>
-    async function loadProjects() {
-      const response = await fetch("http://127.0.0.1:8000/projects/");
-      const projects = await response.json();
-
-      const container = document.getElementById("projects");
-      container.innerHTML = "";
-
-      projects.forEach(async (project) => {
-        const projectEl = document.createElement("div");
-        projectEl.style.border = "1px solid #ccc";
-        projectEl.style.margin = "10px";
-        projectEl.style.padding = "10px";
-
-        // создаём элемент img
-        let img = document.createElement("img");
-        img.style.width = "64px";
-        img.style.height = "64px";
-
-        // пробуем загрузить иконку по эндпоинту
-        try {
-          let res = await fetch(`http://127.0.0.1:8000/projects/${project.id}/icon`);
-          if (res.ok) {
-            let blob = await res.blob();
-            img.src = URL.createObjectURL(blob);
-          } else {
-            img.src = "default.png"; // fallback
-          }
-        } catch (e) {
-          img.src = "default.png"; // если ошибка сети
-        }
-
-        let title = document.createElement("h3");
-        title.innerText = project.name;
-
-        let link = document.createElement("a");
-        link.href = project.link;
-        link.innerText = "Перейти";
-
-        projectEl.appendChild(img);
-        projectEl.appendChild(title);
-        projectEl.appendChild(link);
-
-        container.appendChild(projectEl);
-      });
-    }
-
-    loadProjects();
-  </script>
-</body>
-</html>
-
-
-<!-- <!DOCTYPE html>
-<html lang="ru">
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Aggregator</title>
@@ -632,4 +569,4 @@
         });
     </script>
 </body>
-</html> -->
+</html>
