@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException
+import base64
+from fastapi import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
@@ -100,9 +102,11 @@ async def create_project(project: Project, request: Request):
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO projects (type, name, link, theme, is_premium, icon)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (project.type, project.name, project.link, project.theme, project.is_premium, project.icon))
+    INSERT INTO projects (type, name, link, theme, is_premium, icon)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ''', (project.type, project.name, project.link, project.theme, project.is_premium,
+    sqlite3.Binary(project.icon) if project.icon else None))
+
     
     project_id = cursor.lastrowid
     conn.commit()

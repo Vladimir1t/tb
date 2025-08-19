@@ -419,12 +419,7 @@
                 let html = '';
                 projects.forEach(project => {
                     if (project.icon) {
-                        if (project.icon.byteLength) {
-                            const blobUrl = createBlobUrl(project.icon);
-                            if (blobUrl) iconUrl = blobUrl;
-                        } else if (typeof project.icon === 'string') {
-                            iconUrl = project.icon;
-                        }
+                        iconUrl = project.icon; // это уже "data:image/png;base64,..."
                     }
 
                     html += `
