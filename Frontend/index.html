@@ -415,20 +415,26 @@
                     return;
                 }
 
+                let iconUrl = 'https://via.placeholder.com/48';
                 let html = '';
                 projects.forEach(project => {
-                    let iconUrl = 'https://via.placeholder.com/48';
                     if (project.icon) {
-                        if (project.icon.byteLength) {
-                            // Если это BLOB данные
+                        if (project.icon instanceof ArrayBuffer || 
+                            project.icon instanceof Uint8Array ||
+                            (typeof project.icon === 'object' && project.icon.byteLength !== undefined)) {
                             const blobUrl = createBlobUrl(project.icon);
-                            if (blobUrl) iconUrl = blobUrl;
+                            if (blobUrl) 
+                                iconUrl = blobUrl;
                         } else if (typeof project.icon === 'string') {
-                            // Если это URL строкой
-                            iconUrl = project.icon;
+                            if (project.icon.startsWith('data:image')) {
+                                iconUrl = project.icon; // base64 data URL
+                            } else if (project.icon.startsWith('http')) {
+                                iconUrl = project.icon; // внешний URL
+                            } else {
+                                iconUrl = `data:image/png;base64,${project.icon}`;
+                            }
                         }
                     }
-
                     html += `
                         <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${project.theme.toLowerCase()}">
                             ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
@@ -559,13 +565,10 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
 
-        // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
-            // Первая загрузка
             loadProjects('channels');
             loadUserProfile();
             
-            // Настройка кнопки назад в Telegram
             if (tg.platform !== 'unknown') {
                 tg.BackButton.show();
                 tg.BackButton.onClick(() => {

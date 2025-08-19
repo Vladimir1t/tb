@@ -12,13 +12,11 @@ from urllib.parse import urlparse
 import logging
 from database import init_db
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -27,7 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Модели данных
 class Project(BaseModel):
     id: int = None
     icon: Optional[bytes] = None
@@ -49,10 +46,8 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-# Bнициализация базы данных в database.py
 init_db()
 
-# Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
     try:
         secret = hmac.new(
@@ -89,6 +84,9 @@ async def get_projects(type: str = None, theme: str = None):
     cursor.execute(query, params)
     projects = [dict(row) for row in cursor.fetchall()]
     conn.close()
+    for project in projects:
+        if project.icon and isinstance(project.icon, bytes):
+            project.icon = f"data:image/png;base64,{base64.b64encode(project.icon).decode('utf-8')}"
     
     return projects
 
