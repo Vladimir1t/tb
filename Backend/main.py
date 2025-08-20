@@ -95,7 +95,7 @@ async def get_projects(type: str = None, theme: str = None):
     # 👇 конвертация icon → base64
     for p in projects:
         if p["icon"]:
-            p["icon"] = f"data:image/png;base64,{base64.b64encode(p['icon']).decode('utf-8')}"
+            p["icon"] = f"data:image/jpeg;base64,{base64.b64encode(p['icon']).decode('utf-8')}"
 
     return projects
 
@@ -107,7 +107,7 @@ async def get_project_icon(project_id: int):
     row = cursor.fetchone()
     conn.close()
     if row and row[0]:
-        return Response(content=row[0], media_type="image/png")
+        return Response(content=row[0], media_type="image/jpeg")
     return Response(status_code=404)
 
 @app.post("/projects/", response_model=Project)
