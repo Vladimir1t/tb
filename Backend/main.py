@@ -32,7 +32,7 @@ app.add_middleware(
 # Модели данных
 class Project(BaseModel):
     id: int = None
-    icon: Optional[bytes] = None
+    icon: Optional[str] = None
     type: str
     name: str
     link: str
@@ -110,7 +110,7 @@ async def create_project(project: Project, request: Request):
     if not request.headers.get('X-Telegram-Init-Data'):
         raise HTTPException(status_code=401, detail="Auth required")
     
-    project.icon = project.icon or get_telegram_avatar(project.link)
+    # project.icon = project.icon or get_telegram_avatar(project.link)
     
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
@@ -125,7 +125,10 @@ async def create_project(project: Project, request: Request):
     conn.commit()
     conn.close()
     
-    return {**project.dict(), "id": project_id}
+    icon_str = None
+    if icon_bytes:
+        icon_str = f"data:image/png;base64,{base64.b64encode(icon_bytes).decode()}"
+    return {**project.dict(), "id": project_id, "icon": icon_str}
 
 @app.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: int):
