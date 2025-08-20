@@ -72,10 +72,10 @@ async def get_projects(type: str = None, theme: str = None):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-
+    
     query = "SELECT * FROM projects"
     params = []
-
+    
     if type:
         type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
         query += " WHERE type = ?"
@@ -86,29 +86,24 @@ async def get_projects(type: str = None, theme: str = None):
     elif theme:
         query += " WHERE theme = ?"
         params.append(theme)
-
+    
     query += " ORDER BY is_premium DESC, likes DESC"
     cursor.execute(query, params)
-    projects = [dict(row) for row in cursor.fetchall()]
+    rows = cursor.fetchall()
     conn.close()
-
-    # 👇 конвертация icon → base64
-    for p in projects:
-        if p["icon"]:
-            p["icon"] = f"data:image/png;base64,{base64.b64encode(p['icon']).decode('utf-8')}"
-
+    
+    projects = []
+    for row in rows:
+        project = dict(row)
+        if project["icon"]: 
+            project["icon"] = (
+                f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
+            )
+        else:
+            project["icon"] = None
+        projects.append(project)
+    
     return projects
-
-@app.get("/projects/{project_id}/icon")
-async def get_project_icon(project_id: int):
-    conn = sqlite3.connect("aggregator.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT icon FROM projects WHERE id = ?", (project_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if row and row[0]:
-        return Response(content=row[0], media_type="image/png")
-    return Response(status_code=404)
 
 @app.post("/projects/", response_model=Project)
 async def create_project(project: Project, request: Request):
