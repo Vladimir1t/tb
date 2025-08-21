@@ -4,10 +4,10 @@ from telethon import TelegramClient
 from typing import Optional
 import threading
 
-# Настройки Telegram API
+# Telegram API
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
-SESSION_NAME = 'Backend/media/session_1'
+SESSION_NAME = 'session_1'
 DB_NAME = 'aggregator.db'
 
 def _run_in_thread(coro):
@@ -46,7 +46,6 @@ def init_db(db_path: str = DB_NAME):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # Создание таблиц (ваш существующий код)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,7 +76,6 @@ def init_db(db_path: str = DB_NAME):
         PRIMARY KEY (user_id, task_type)
     )''')
 
-    # Заполнение тестовыми данными
     cursor.execute("SELECT COUNT(*) FROM projects") 
     if cursor.fetchone()[0] == 0:
         test_data = [
