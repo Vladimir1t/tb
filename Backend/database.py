@@ -14,10 +14,6 @@ SESSION_NAME = 'session_1'
 BOT_TOKEN = "8143528604:AAEiouPy36hamVNvQhJK3ptZsiaUXJjkwIs"
 DB_NAME = 'aggregator.db'
 
-if os.path.exists(DB_NAME):
-    os.remove(DB_NAME)
-    print(f"{DB_NAME} удалена. создается новая")
-
 def _run_in_thread(coro):
     """Запускает корутину в отдельном потоке с новым event loop"""
     result = None
