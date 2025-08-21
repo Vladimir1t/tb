@@ -220,7 +220,7 @@ async def debug_projects():
 
 @app.on_event("startup")
 async def startup_db():
-    init_db()
+    # init_db()
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
 
