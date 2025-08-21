@@ -140,7 +140,7 @@ def init_db(db_path: str = DB_NAME):
             ('channel', 'tsiskaridzenews', 'искусство'),
             ('channel', 'moscowach', 'новости'),
             ('channel', 'yuriyshatunov_live', 'музыка'),
-            ('channel', 'yuriyshatunov_live', 'химия'),
+            ('channel', 'nikitanya713', 'химия'),
             ('channel', 'ahmatova_anna1', 'литература'),
         ]
         
