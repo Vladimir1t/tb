@@ -34,6 +34,7 @@
             max-width: 100%;
             padding: 15px;
             animation: fadeIn 0.5s ease;
+            position: relative; /* Добавлено для корректного позиционирования dropdown */
         }
 
         @keyframes fadeIn {
@@ -151,7 +152,7 @@
             align-items: center;
             margin-bottom: 10px;
         }
-        
+
         .channel-icon {
             width: 48px;
             height: 48px;
@@ -159,8 +160,9 @@
             object-fit: cover;
             margin-right: 12px;
             border: 2px solid #e5e7eb;
+            background-color: #eee;
         }
-        
+
         .channel-info {
             flex: 1;
         }
@@ -221,6 +223,7 @@
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         .profile-btn {
@@ -228,7 +231,7 @@
             font-size: 1.1rem;
             padding: 15px 25px;
             border-radius: 15px;
-            margin: 10px auto;
+            margin: 0 auto;
             display: block;
             width: auto;
             min-width: 200px;
@@ -268,9 +271,6 @@
         }
 
         .to-top-btn {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
             background: var(--primary-color);
             color: white;
             border: none;
@@ -281,6 +281,7 @@
             cursor: pointer;
             display: none;
             z-index: 1000;
+            margin-left: 10px;
         }
 
         @keyframes fadeOut {
@@ -288,14 +289,22 @@
             to { opacity: 0; transform: translateY(10px); }
         }
 
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            position: relative; /* Для позиционирования dropdown */
+        }
+
         .search-bar {
+            flex: 1;
             display: flex;
             align-items: center;
             background: white;
             border-radius: 12px;
             padding: 10px 15px;
             box-shadow: var(--shadow);
-            margin-bottom: 20px;
             transition: var(--transition);
         }
 
@@ -316,11 +325,79 @@
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
         }
 
+        .filter-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+            min-width: 100px; /* Минимальная ширина для кнопки */
+        }
+
+        .filter-btn:hover {
+            background: #0078b4;
+            transform: translateY(-2px);
+        }
+
+        /* Стили для выпадающего списка фильтра */
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            padding: 10px 0;
+            margin-top: 5px;
+            min-width: 180px;
+            border: 1px solid #e5e7eb; /* Добавлена граница для лучшей видимости */
+        }
+
+        .filter-dropdown.show {
+            display: flex;
+        }
+
+        .filter-option {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-color);
+            text-decoration: none;
+            display: block;
+        }
+
+        .filter-option:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .filter-option.active {
+            background-color: #e3f2fd;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
         .no-results {
             text-align: center;
             padding: 20px;
             color: var(--light-text);
             font-style: italic;
+        }
+
+        #faq-link {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        #faq-link:hover {
+            background-color: #e0a800;
         }
     </style>
 </head>
@@ -337,8 +414,23 @@
             <div class="tab" data-tab="apps">Мини-приложения</div>
         </div>
 
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Поиск..." />
+        <!-- Контейнер для поиска и фильтра -->
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Поиск..." />
+            </div>
+            <button class="filter-btn" id="filterBtn">Фильтр ▼</button>
+            
+            <!-- Выпадающий список фильтра -->
+            <div class="filter-dropdown" id="filterDropdown">
+                <a href="#" class="filter-option active" data-theme="все">Все категории</a>
+                <a href="#" class="filter-option" data-theme="спорт">Спорт</a>
+                <a href="#" class="filter-option" data-theme="новости">Новости</a>
+                <a href="#" class="filter-option" data-theme="наука">Наука</a>
+                <a href="#" class="filter-option" data-theme="искусство">Искусство</a>
+                <a href="#" class="filter-option" data-theme="путешествия">Путешествия</a>
+                <a href="#" class="filter-option" data-theme="блоги">Блоги</a>
+            </div>
         </div>
 
         <div id="channels-tab" class="tab-content active">
@@ -356,7 +448,7 @@
         <div id="help-section" class="help-section">
             <h3>Справка и поддержка</h3>
             <a href="https://t.me/requestsaggregator_bot" class="btn help-btn">Бот поддержки</a>
-            <a href="https://t.me/aggregator_support" class="btn help-btn">FAQ</a>
+            <a href="https://t.me/aggregator_support" id="faq-link" class="btn help-btn">FAQ</a>
         </div>
     </div>
 
@@ -368,25 +460,61 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        
+
         const API_URL = 'https://telegram-bot-zgkr.onrender.com';
         let currentUser = null;
+        let searchTimeout;
+        let currentFilter = 'все';
 
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const profileBtn = document.getElementById('profileBtn');
         const toTopBtn = document.getElementById('toTopBtn');
         const searchInput = document.getElementById('searchInput');
+        const filterBtn = document.getElementById('filterBtn');
+        const filterDropdown = document.getElementById('filterDropdown');
+        const filterOptions = document.querySelectorAll('.filter-option');
 
-        // Функция для создания URL из BLOB
-        function createBlobUrl(blobData) {
-            try {
-                if (!blobData) return null;
-                const blob = new Blob([new Uint8Array(blobData)], {type: 'image/jpeg'});
-                return URL.createObjectURL(blob);
-            } catch (e) {
-                console.error('Error creating blob URL:', e);
-                return null;
+        function getIconUrl(iconData) {
+            if (iconData && typeof iconData === 'string' && iconData.startsWith('http')) {
+                return iconData;
+            } else if (iconData) {
+                console.warn('Неизвестный формат иконки:', iconData);
+            }
+            return 'https://via.placeholder.com/48';
+        }
+
+        function applyFiltersAndSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            const activeTab = document.querySelector('.tab.active').dataset.tab;
+            const tabContent = document.getElementById(`${activeTab}-tab`);
+            const cards = tabContent.querySelectorAll('.card');
+
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const title = (card.querySelector('h3').textContent || '').toLowerCase();
+                const theme = (card.dataset.theme || '').toLowerCase();
+                
+                const matchesSearch = query === '' || title.includes(query) || theme.includes(query);
+                const matchesFilter = currentFilter === 'все' || theme.includes(currentFilter);
+                
+                const matches = matchesSearch && matchesFilter;
+
+                card.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            const noResults = tabContent.querySelector('.no-results');
+            if (visibleCount === 0) {
+                if (!noResults) {
+                    const msg = document.createElement('div');
+                    msg.className = 'no-results';
+                    msg.textContent = 'Ничего не найдено';
+                    tabContent.appendChild(msg);
+                }
+            } else if (noResults) {
+                noResults.remove();
             }
         }
 
@@ -397,13 +525,15 @@
                 'apps': 'mini_app'
             };
             const apiType = typeMap[tabName];
-            
+
             const tabContent = document.getElementById(`${tabName}-tab`);
             tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
 
             try {
-                const response = await fetch(`${API_URL}/projects/?type=${apiType}`);
-                
+                const url = `${API_URL}/projects/?type=${apiType}`;
+                console.log(`Fetching from: ${url}`);
+                const response = await fetch(url);
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -417,19 +547,16 @@
 
                 let html = '';
                 projects.forEach(project => {
-                    let iconUrl = 'https://via.placeholder.com/48';
-                    if (project.icon) {
-                        iconUrl = project.icon;  
-                    }
+                    const iconUrl = getIconUrl(project.icon);
 
                     html += `
-                        <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${project.theme.toLowerCase()}">
+                        <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${(project.theme || '').toLowerCase()}">
                             ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
                             <div class="channel-icon-container">
-                                <img src="${iconUrl}" class="channel-icon" alt="${project.name}">
+                                <img src="${iconUrl}" class="channel-icon" alt="${project.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/48';">
                                 <div class="channel-info">
                                     <h3>${project.name}</h3>
-                                    <p>Тематика: ${project.theme}</p>
+                                    <p>Тематика: ${project.theme || 'Не указана'}</p>
                                 </div>
                             </div>
                             ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
@@ -440,6 +567,7 @@
                 });
 
                 tabContent.innerHTML = html;
+                applyFiltersAndSearch();
 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
@@ -459,31 +587,87 @@
                     activeContent.classList.remove('active', 'fade-out');
                 }, 300);
             }
-            
+
             tabs.forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
-            
+
             const newContent = document.getElementById(`${tabName}-tab`);
             newContent.classList.add('active');
-            
+
             loadProjects(tabName);
         }
 
         async function loadUserProfile() {
             if (!tg.initDataUnsafe?.user) return;
-            
+
             try {
-                const response = await fetch(`${API_URL}/users/${tg.initDataUnsafe.user.id}`);
+                const userId = tg.initDataUnsafe.user.id;
+                const url = `${API_URL}/users/${userId}`;
+                console.log(`Fetching user profile from: ${url}`);
+                const response = await fetch(url);
+                if (!response.ok) {
+                     throw new Error(`HTTP error! status: ${response.status} при загрузке профиля`);
+                }
                 const userData = await response.json();
                 currentUser = userData;
-                
-                profileBtn.textContent = `Профиль (${userData.stars}★)`;
-                
+
+                profileBtn.textContent = `Профиль (${userData.stars || 0}★)`;
+
             } catch (error) {
                 console.error('Ошибка загрузки профиля:', error);
+                profileBtn.textContent = 'Профиль (Ошибка)';
             }
         }
+
+        // Обработчик клика по кнопке фильтра
+        filterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterDropdown.classList.toggle('show');
+            // Меняем текст кнопки для индикации состояния
+            if (filterDropdown.classList.contains('show')) {
+                filterBtn.textContent = 'Фильтр ▲';
+            } else {
+                filterBtn.textContent = 'Фильтр ▼';
+            }
+        });
+
+        // Обработчики клика по опциям фильтра
+        filterOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                filterOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                currentFilter = option.dataset.theme;
+                
+                // Меняем текст кнопки на выбранную категорию
+                if (currentFilter === 'все') {
+                    filterBtn.textContent = 'Фильтр ▼';
+                } else {
+                    filterBtn.textContent = currentFilter;
+                }
+                
+                filterDropdown.classList.remove('show');
+                
+                applyFiltersAndSearch();
+            });
+        });
+
+        // Закрываем выпадающий список при клике вне его
+        document.addEventListener('click', (e) => {
+            if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
+                filterDropdown.classList.remove('show');
+                // Восстанавливаем текст кнопки
+                if (currentFilter === 'все') {
+                    filterBtn.textContent = 'Фильтр ▼';
+                } else {
+                    filterBtn.textContent = currentFilter;
+                }
+            }
+        });
 
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -493,41 +677,17 @@
 
         profileBtn.addEventListener('click', () => {
             if (currentUser) {
-                tg.showAlert(`Ваш профиль: \n★ Звезды: ${currentUser.stars} \n💰 Баланс: ${currentUser.balance} руб.`);
+                tg.showAlert(`Ваш профиль: \n★ Звезды: ${currentUser.stars || 0} \n💰 Баланс: ${currentUser.balance || 0} руб.`);
             } else {
                 tg.showAlert('Профиль не загружен. Попробуйте позже.');
             }
         });
 
-        // Поиск
         searchInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase().trim();
-            const activeTab = document.querySelector('.tab.active').dataset.tab;
-            const tabContent = document.getElementById(`${activeTab}-tab`);
-            const cards = tabContent.querySelectorAll('.card');
-            
-            let visibleCount = 0;
-            
-            cards.forEach(card => {
-                const title = card.querySelector('h3').textContent.toLowerCase();
-                const theme = card.dataset.theme.toLowerCase();
-                const matches = query === '' || title.includes(query) || theme.includes(query);
-                
-                card.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
-            });
-            
-            const noResults = tabContent.querySelector('.no-results');
-            if (visibleCount === 0 && query !== '') {
-                if (!noResults) {
-                    const msg = document.createElement('div');
-                    msg.className = 'no-results';
-                    msg.textContent = 'Ничего не найдено';
-                    tabContent.appendChild(msg);
-                }
-            } else if (noResults) {
-                noResults.remove();
-            }
+             clearTimeout(searchTimeout);
+             searchTimeout = setTimeout(() => {
+                  applyFiltersAndSearch();
+             }, 300);
         });
 
         window.onscroll = function() {
@@ -537,7 +697,7 @@
                 toTopBtn.style.display = "none";
             }
         };
-        
+
         toTopBtn.addEventListener('click', function() {
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
@@ -545,7 +705,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadProjects('channels');
             loadUserProfile();
-            
+
             if (tg.platform !== 'unknown') {
                 tg.BackButton.show();
                 tg.BackButton.onClick(() => {
