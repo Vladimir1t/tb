@@ -12,7 +12,10 @@ import hashlib
 import requests
 from urllib.parse import urlparse
 import logging
+import threading
+
 from database import init_db
+from bot import run_bot 
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +35,7 @@ app.add_middleware(
 # Модели данных
 class Project(BaseModel):
     id: int = None
-    icon: Optional[bytes] = None
+    icon: Optional[str] = None
     type: str
     name: str
     link: str
@@ -50,9 +53,6 @@ class User(BaseModel):
 
     class Config:
         json_encoders = {type(None): lambda _: None}
-
-# Bнициализация базы данных в database.py
-init_db()
 
 # Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
@@ -72,10 +72,10 @@ async def get_projects(type: str = None, theme: str = None):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-
+    
     query = "SELECT * FROM projects"
     params = []
-
+    
     if type:
         type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
         query += " WHERE type = ?"
@@ -86,36 +86,31 @@ async def get_projects(type: str = None, theme: str = None):
     elif theme:
         query += " WHERE theme = ?"
         params.append(theme)
-
+    
     query += " ORDER BY is_premium DESC, likes DESC"
     cursor.execute(query, params)
-    projects = [dict(row) for row in cursor.fetchall()]
+    rows = cursor.fetchall()
     conn.close()
-
-    # 👇 конвертация icon → base64
-    for p in projects:
-        if p["icon"]:
-            p["icon"] = f"data:image/jpeg;base64,{base64.b64encode(p['icon']).decode('utf-8')}"
-
+    
+    projects = []
+    for row in rows:
+        project = dict(row)
+        if project["icon"]: 
+            project["icon"] = (
+                f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
+            )
+        else:
+            project["icon"] = None
+        projects.append(project)
+    
     return projects
-
-@app.get("/projects/{project_id}/icon")
-async def get_project_icon(project_id: int):
-    conn = sqlite3.connect("aggregator.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT icon FROM projects WHERE id = ?", (project_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if row and row[0]:
-        return Response(content=row[0], media_type="image/jpeg")
-    return Response(status_code=404)
 
 @app.post("/projects/", response_model=Project)
 async def create_project(project: Project, request: Request):
     if not request.headers.get('X-Telegram-Init-Data'):
         raise HTTPException(status_code=401, detail="Auth required")
     
-    project.icon = project.icon or get_telegram_avatar(project.link)
+    # project.icon = project.icon or get_telegram_avatar(project.link)
     
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
@@ -130,7 +125,10 @@ async def create_project(project: Project, request: Request):
     conn.commit()
     conn.close()
     
-    return {**project.dict(), "id": project_id}
+    icon_str = None
+    if icon_bytes:
+        icon_str = f"data:image/png;base64,{base64.b64encode(icon_bytes).decode()}"
+    return {**project.dict(), "id": project_id, "icon": icon_str}
 
 @app.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: int):
@@ -222,7 +220,10 @@ async def debug_projects():
 
 @app.on_event("startup")
 async def startup_db():
-    init_db()
+    # init_db()
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
 
 if __name__ == "__main__":
+    # mini app
     uvicorn.run(app, host="0.0.0.0", port=8000)
