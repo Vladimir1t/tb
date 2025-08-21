@@ -7,6 +7,7 @@ import threading
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
 SESSION_NAME = 'session_1'
+BOT_TOKEN = "8143528604:AAEiouPy36hamVNvQhJK3ptZsiaUXJjkwIs"
 DB_NAME = 'aggregator.db'
 
 def _run_in_thread(coro):
@@ -29,6 +30,7 @@ def _run_in_thread(coro):
 async def _get_avatar_bytes(username: str) -> Optional[bytes]:
     """Асинхронно получает аватарку канала"""
     async with TelegramClient(SESSION_NAME, API_ID, API_HASH) as client:
+        await client.start(bot_token=BOT_TOKEN) 
         try:
             entity = await client.get_entity(username)
             return await client.download_profile_photo(entity, file=bytes)
