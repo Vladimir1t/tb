@@ -54,7 +54,7 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-init_db()
+# init_db()
 
 # Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
@@ -223,12 +223,9 @@ async def debug_projects():
 @app.on_event("startup")
 async def startup_db():
     init_db()
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
 
 if __name__ == "__main__":
-    # bot
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.start()
     # mini app
     uvicorn.run(app, host="0.0.0.0", port=8000)
-   
-    bot_thread.join()
