@@ -475,14 +475,17 @@
         const filterDropdown = document.getElementById('filterDropdown');
         const filterOptions = document.querySelectorAll('.filter-option');
 
-        function getIconUrl(iconData) {
-            if (iconData && typeof iconData === 'string' && iconData.startsWith('http')) {
-                return iconData;
-            } else if (iconData) {
-                console.warn('Неизвестный формат иконки:', iconData);
-            }
-            return 'https://via.placeholder.com/48';
-        }
+        // Функция для создания URL из BLOB
+        function createBlobUrl(blobData) {
+        try {
+                if (!blobData) return null;
+                const blob = new Blob([new Uint8Array(blobData)], {type: 'image/jpeg'});
+                return URL.createObjectURL(blob);
+         } catch (e) {
+                console.error('Error creating blob URL:', e);
+                return null;
+
+     
 
         function applyFiltersAndSearch() {
             const query = searchInput.value.toLowerCase().trim();
@@ -547,13 +550,16 @@
 
                 let html = '';
                 projects.forEach(project => {
-                    const iconUrl = getIconUrl(project.icon);
+                    let iconUrl = 'https://via.placeholder.com/48';
+                    if (project.icon) {
+                        iconUrl = project.icon;  
+                    }
 
                     html += `
                         <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${(project.theme || '').toLowerCase()}">
                             ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
                             <div class="channel-icon-container">
-                                <img src="${iconUrl}" class="channel-icon" alt="${project.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/48';">
+                                 <img src="${iconUrl}" class="channel-icon" alt="${project.name}">
                                 <div class="channel-info">
                                     <h3>${project.name}</h3>
                                     <p>Тематика: ${project.theme || 'Не указана'}</p>
