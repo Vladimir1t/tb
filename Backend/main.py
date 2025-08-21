@@ -54,8 +54,6 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-# init_db()
-
 # Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
     try:
