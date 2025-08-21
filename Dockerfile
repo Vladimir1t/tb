@@ -16,9 +16,7 @@ COPY . .
 
 WORKDIR /app/Backend
 
-RUN if [ ! -f "aggregator.db" ]; then \
-        sqlite3 aggregator.db "VACUUM;"; \
-    fi
+COPY aggregator.db aggregator.db
 
 EXPOSE 8000
 

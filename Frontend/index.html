@@ -327,8 +327,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Telegram Aggregator</h2>
-            <p>Найдите лучшие каналы, боты и мини-приложения</p>
+            <h2>Telegram Catalog</h2>
+            <p>Найдите лучшие каналы, боты и мини-приложения по категориям</p>
         </div>
 
         <div class="tabs">
@@ -355,8 +355,8 @@
 
         <div id="help-section" class="help-section">
             <h3>Справка и поддержка</h3>
-            <a href="https://t.me/aggregator_support" class="btn help-btn">Бот поддержки</a>
-            <a href="#" class="btn help-btn">FAQ</a>
+            <a href="https://t.me/requestsaggregator_bot" class="btn help-btn">Бот поддержки</a>
+            <a href="https://t.me/aggregator_support" class="btn help-btn">FAQ</a>
         </div>
     </div>
 
@@ -419,7 +419,7 @@
                 projects.forEach(project => {
                     let iconUrl = 'https://via.placeholder.com/48';
                     if (project.icon) {
-                        iconUrl = project.icon;  // уже готовая строка
+                        iconUrl = project.icon;  
                     }
 
                     html += `
@@ -451,9 +451,7 @@
             }
         }
 
-        // Переключение вкладок
         function switchTab(tabName) {
-            // Анимация исчезновения
             const activeContent = document.querySelector('.tab-content.active');
             if (activeContent) {
                 activeContent.classList.add('fade-out');
@@ -462,20 +460,16 @@
                 }, 300);
             }
             
-            // Обновляем активные табы
             tabs.forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
             
-            // Показываем новый контент
             const newContent = document.getElementById(`${tabName}-tab`);
             newContent.classList.add('active');
             
-            // Загружаем данные
             loadProjects(tabName);
         }
 
-        // Загрузка данных пользователя
         async function loadUserProfile() {
             if (!tg.initDataUnsafe?.user) return;
             
@@ -484,7 +478,6 @@
                 const userData = await response.json();
                 currentUser = userData;
                 
-                // Обновляем кнопку профиля
                 profileBtn.textContent = `Профиль (${userData.stars}★)`;
                 
             } catch (error) {
@@ -492,7 +485,6 @@
             }
         }
 
-        // Обработчики событий
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 switchTab(tab.dataset.tab);
@@ -525,7 +517,6 @@
                 if (matches) visibleCount++;
             });
             
-            // Показываем сообщение, если ничего не найдено
             const noResults = tabContent.querySelector('.no-results');
             if (visibleCount === 0 && query !== '') {
                 if (!noResults) {
@@ -539,7 +530,6 @@
             }
         });
 
-        // Кнопка "Наверх"
         window.onscroll = function() {
             if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
                 toTopBtn.style.display = "block";
@@ -552,13 +542,10 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
 
-        // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
-            // Первая загрузка
             loadProjects('channels');
             loadUserProfile();
             
-            // Настройка кнопки назад в Telegram
             if (tg.platform !== 'unknown') {
                 tg.BackButton.show();
                 tg.BackButton.onClick(() => {
