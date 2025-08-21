@@ -12,6 +12,7 @@ import hashlib
 import requests
 from urllib.parse import urlparse
 import logging
+import threading
 
 from database import init_db
 from bot import run_bot 
@@ -224,6 +225,10 @@ async def startup_db():
     init_db()
 
 if __name__ == "__main__":
+    # bot
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
+    # mini app
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    # Запускаем бота в отдельном потоке
-    threading.Thread(target=run_bot, daemon=True).start()
+   
+    bot_thread.join()
