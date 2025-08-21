@@ -218,11 +218,11 @@ async def debug_projects():
     conn.close()
     return projects
 
-# @app.on_event("startup")
-# async def startup_db():
-#     # init_db()
-#     bot_thread = threading.Thread(target=run_bot, daemon=True)
-#     bot_thread.start()
+@app.on_event("startup")
+async def startup_db():
+    # init_db()
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
 
 if __name__ == "__main__":
     # mini app
