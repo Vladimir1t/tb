@@ -2,14 +2,21 @@ import sqlite3
 import asyncio
 from telethon import TelegramClient
 from telethon.errors import RPCError, UsernameInvalidError
+from telethon.tl.functions.channels import GetFullChannelRequest
 from typing import Optional
 import threading
+import os
+
 
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
 SESSION_NAME = 'session_1'
 BOT_TOKEN = "8143528604:AAEiouPy36hamVNvQhJK3ptZsiaUXJjkwIs"
 DB_NAME = 'aggregator.db'
+
+if os.path.exists(DB_NAME):
+    os.remove(DB_NAME)
+    print(f"{DB_NAME} удалена. создается новая")
 
 def _run_in_thread(coro):
     """Запускает корутину в отдельном потоке с новым event loop"""
@@ -49,6 +56,22 @@ async def get_channel_name(username: str) -> Optional[str]:
             print(f"Ошибка при получении имени для {username}: {e}")
             return None
 
+async def get_subscribers_count(username: str) -> int:
+    async with TelegramClient(SESSION_NAME, API_ID, API_HASH) as client:
+        await client.start(bot_token=BOT_TOKEN)
+        try:
+            entity = await client.get_entity(username)
+            full = await client(GetFullChannelRequest(channel=entity))
+            return full.full_chat.participants_count
+        except RPCError as e:
+            print(f"Ошибка RPC при получении участников {username}: {e}")
+            return 0
+        except Exception as e:
+            print(f"Ошибка при получении участников {username}: {e}")
+            return 0
+
+def get_subscribers_count_sync(username: str) -> int:
+    return _run_in_thread(get_subscribers_count(username))
 
 def get_avatar_bytes_sync(username: str) -> Optional[bytes]:
     """Синхронная обертка для получения аватарки"""
@@ -113,24 +136,34 @@ def init_db(db_path: str = DB_NAME):
             ('channel', 'deginc17', 'футбол', 'deginc17'),
             ('bot', 'weather_bot', 'utility'),
             ('bot', 'finance_bot', 'finance'),
-            ('mini_app', 'puzzle_app', 'games')
+            ('mini_app', 'puzzle_app', 'games'),
+            ('channel', 'tsiskaridzenews', 'искусство'),
+            ('channel', 'moscowach', 'новости'),
+            ('channel', 'yuriyshatunov_live', 'музыка'),
+            ('channel', 'yuriyshatunov_live', 'химия'),
+            ('channel', 'ahmatova_anna1', 'литература'),
         ]
         
         for item in test_data:
             avatar_bytes = get_avatar_bytes_sync(item[1])
             channel_name = get_channel_name_sync(item[1])
+            subscribers = get_subscribers_count_sync(item[1])
             cursor.execute('''
                 INSERT INTO projects 
                 (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (item[0], 
-                  channel_name or "default",
+                  channel_name,
                   f"https://t.me/{item[1]}",
                   item[2],
                   0,
                   0, 
-                  0,
+                  subscribers,
                   0,
                   avatar_bytes))
+
     conn.commit()
     conn.close()
+
+if __name__ == "__main__":
+    init_db()
