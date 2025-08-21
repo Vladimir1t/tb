@@ -34,6 +34,8 @@
             max-width: 100%;
             padding: 15px;
             animation: fadeIn 0.5s ease;
+            /* Добавлено для корректного позиционирования dropdown */
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -288,15 +290,25 @@
             to { opacity: 0; transform: translateY(10px); }
         }
 
+        /* === НОВЫЕ СТИЛИ ДЛЯ ФИЛЬТРА === */
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            position: relative; /* Для позиционирования dropdown */
+        }
+
         .search-bar {
+            flex: 1; /* Занимает всё доступное пространство */
             display: flex;
             align-items: center;
             background: white;
             border-radius: 12px;
             padding: 10px 15px;
             box-shadow: var(--shadow);
-            margin-bottom: 20px;
             transition: var(--transition);
+            margin-bottom: 0; /* Убираем margin-bottom у search-bar */
         }
 
         .search-bar input {
@@ -315,6 +327,66 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
         }
+
+        .filter-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+            min-width: 100px; /* Минимальная ширина */
+        }
+
+        .filter-btn:hover {
+            background: #0078b4;
+            transform: translateY(-2px);
+        }
+
+        /* Стили для выпадающего списка фильтра */
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            padding: 10px 0;
+            margin-top: 5px;
+            min-width: 180px;
+            border: 1px solid #e5e7eb; /* Граница */
+        }
+
+        .filter-dropdown.show {
+            display: flex;
+        }
+
+        .filter-option {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-color);
+            text-decoration: none;
+            display: block;
+        }
+
+        .filter-option:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .filter-option.active {
+            background-color: #e3f2fd;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        /* === КОНЕЦ НОВЫХ СТИЛЕЙ === */
 
         .no-results {
             text-align: center;
@@ -337,9 +409,25 @@
             <div class="tab" data-tab="apps">Мини-приложения</div>
         </div>
 
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Поиск..." />
+        <!-- === НОВЫЙ HTML ДЛЯ ФИЛЬТРА === -->
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Поиск..." />
+            </div>
+            <button class="filter-btn" id="filterBtn">Фильтр ▼</button>
+            
+            <!-- Выпадающий список фильтра -->
+            <div class="filter-dropdown" id="filterDropdown">
+                <a href="#" class="filter-option active" data-theme="все">Все категории</a>
+                <a href="#" class="filter-option" data-theme="спорт">Спорт</a>
+                <a href="#" class="filter-option" data-theme="новости">Новости</a>
+                <a href="#" class="filter-option" data-theme="наука">Наука</a>
+                <a href="#" class="filter-option" data-theme="искусство">Искусство</a>
+                <a href="#" class="filter-option" data-theme="путешествия">Путешествия</a>
+                <a href="#" class="filter-option" data-theme="блоги">Блоги</a>
+            </div>
         </div>
+        <!-- === КОНЕЦ НОВОГО HTML === -->
 
         <div id="channels-tab" class="tab-content active">
             <div class="loading">Загрузка каналов...</div>
@@ -371,12 +459,61 @@
         
         const API_URL = 'https://telegram-bot-zgkr.onrender.com';
         let currentUser = null;
+        let searchTimeout;
+
+        // === НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ФИЛЬТРА ===
+        let currentFilter = 'все'; // Переменная для хранения текущего фильтра
+        // === КОНЕЦ НОВОЙ ПЕРЕМЕННОЙ ===
 
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
         const profileBtn = document.getElementById('profileBtn');
         const toTopBtn = document.getElementById('toTopBtn');
         const searchInput = document.getElementById('searchInput');
+
+        // === НОВЫЕ ЭЛЕМЕНТЫ И ФУНКЦИИ ДЛЯ ФИЛЬТРА ===
+        const filterBtn = document.getElementById('filterBtn');
+        const filterDropdown = document.getElementById('filterDropdown');
+        const filterOptions = document.querySelectorAll('.filter-option');
+
+        // Функция для применения фильтра и поиска
+        function applyFiltersAndSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            const activeTab = document.querySelector('.tab.active').dataset.tab;
+            const tabContent = document.getElementById(`${activeTab}-tab`);
+            const cards = tabContent.querySelectorAll('.card');
+
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const theme = card.dataset.theme.toLowerCase();
+                
+                // Проверяем соответствие поисковому запросу
+                const matchesSearch = query === '' || title.includes(query) || theme.includes(query);
+                
+                // Проверяем соответствие фильтру
+                const matchesFilter = currentFilter === 'все' || theme.includes(currentFilter);
+                
+                const matches = matchesSearch && matchesFilter;
+
+                card.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            const noResults = tabContent.querySelector('.no-results');
+            if (visibleCount === 0 && (query !== '' || currentFilter !== 'все')) {
+                if (!noResults) {
+                    const msg = document.createElement('div');
+                    msg.className = 'no-results';
+                    msg.textContent = 'Ничего не найдено';
+                    tabContent.appendChild(msg);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
+        }
+        // === КОНЕЦ НОВЫХ ЭЛЕМЕНТОВ И ФУНКЦИЙ ===
 
         // Функция для создания URL из BLOB
         function createBlobUrl(blobData) {
@@ -441,6 +578,10 @@
 
                 tabContent.innerHTML = html;
 
+                // === ПРИМЕНЯЕМ ФИЛЬТР ПОСЛЕ ЗАГРУЗКИ ===
+                applyFiltersAndSearch();
+                // === КОНЕЦ ПРИМЕНЕНИЯ ФИЛЬТРА ===
+
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
                 tabContent.innerHTML = `
@@ -485,6 +626,57 @@
             }
         }
 
+        // === НОВЫЕ ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ ФИЛЬТРА ===
+        // Обработчик клика по кнопке фильтра
+        filterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterDropdown.classList.toggle('show');
+            // Меняем текст кнопки для индикации состояния
+            if (filterDropdown.classList.contains('show')) {
+                filterBtn.textContent = 'Фильтр ▲';
+            } else {
+                filterBtn.textContent = 'Фильтр ▼';
+            }
+        });
+
+        // Обработчики клика по опциям фильтра
+        filterOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                filterOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                currentFilter = option.dataset.theme;
+                
+                // Меняем текст кнопки на выбранную категорию
+                if (currentFilter === 'все') {
+                    filterBtn.textContent = 'Фильтр ▼';
+                } else {
+                    filterBtn.textContent = currentFilter;
+                }
+                
+                filterDropdown.classList.remove('show');
+                
+                applyFiltersAndSearch();
+            });
+        });
+
+        // Закрываем выпадающий список при клике вне его
+        document.addEventListener('click', (e) => {
+            if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
+                filterDropdown.classList.remove('show');
+                // Восстанавливаем текст кнопки
+                if (currentFilter === 'все') {
+                    filterBtn.textContent = 'Фильтр ▼';
+                } else {
+                    filterBtn.textContent = currentFilter;
+                }
+            }
+        });
+        // === КОНЕЦ НОВЫХ ОБРАБОТЧИКОВ ===
+
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 switchTab(tab.dataset.tab);
@@ -499,35 +691,14 @@
             }
         });
 
-        // Поиск
+        // Поиск (обновлен для работы с фильтром)
         searchInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase().trim();
-            const activeTab = document.querySelector('.tab.active').dataset.tab;
-            const tabContent = document.getElementById(`${activeTab}-tab`);
-            const cards = tabContent.querySelectorAll('.card');
-            
-            let visibleCount = 0;
-            
-            cards.forEach(card => {
-                const title = card.querySelector('h3').textContent.toLowerCase();
-                const theme = card.dataset.theme.toLowerCase();
-                const matches = query === '' || title.includes(query) || theme.includes(query);
-                
-                card.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
-            });
-            
-            const noResults = tabContent.querySelector('.no-results');
-            if (visibleCount === 0 && query !== '') {
-                if (!noResults) {
-                    const msg = document.createElement('div');
-                    msg.className = 'no-results';
-                    msg.textContent = 'Ничего не найдено';
-                    tabContent.appendChild(msg);
-                }
-            } else if (noResults) {
-                noResults.remove();
-            }
+             clearTimeout(searchTimeout);
+             searchTimeout = setTimeout(() => {
+                  // === ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ===
+                  applyFiltersAndSearch();
+                  // === КОНЕЦ ИЗМЕНЕНИЯ ===
+             }, 300);
         });
 
         window.onscroll = function() {
@@ -552,6 +723,10 @@
                     tg.close();
                 });
             }
+            
+            // === УСТАНОВКА АКТИВНОГО ФИЛЬТРА ПО УМОЛЧАНИЮ ===
+            document.querySelector('.filter-option[data-theme="все"]').classList.add('active');
+            // === КОНЕЦ УСТАНОВКИ ===
         });
     </script>
 </body>
