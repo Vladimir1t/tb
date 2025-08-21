@@ -12,7 +12,9 @@ import hashlib
 import requests
 from urllib.parse import urlparse
 import logging
+
 from database import init_db
+from bot import run_bot 
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -51,7 +53,6 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-# Bнициализация базы данных в database.py
 init_db()
 
 # Валидация Telegram WebApp
@@ -224,3 +225,5 @@ async def startup_db():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Запускаем бота в отдельном потоке
+    threading.Thread(target=run_bot, daemon=True).start()
