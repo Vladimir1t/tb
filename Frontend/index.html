@@ -14,6 +14,11 @@
             --light-text: #6c757d;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             --transition: all 0.3s ease;
+            /* Новые переменные для лайка */
+            --like-button-bg: white;
+            --like-button-border: #e0e0e0;
+            --like-icon-default: #9e9e9e;
+            --like-icon-liked: #ff5252;
         }
 
         * {
@@ -26,7 +31,7 @@
         body {
             background-color: var(--secondary-color);
             color: var(--text-color);
-            padding-bottom: 120px; /* Увеличен отступ снизу для статичной навигации */
+            padding-bottom: 120px;
             transition: var(--transition);
         }
 
@@ -34,7 +39,6 @@
             max-width: 100%;
             padding: 15px;
             animation: fadeIn 0.5s ease;
-            /* Добавлено для корректного позиционирования dropdown */
             position: relative;
         }
 
@@ -60,7 +64,6 @@
             font-size: 1rem;
         }
 
-        /* === СТИЛИ ДЛЯ СТАТИЧНОЙ НАВИГАЦИИ ВНИЗУ === */
         .bottom-tabs {
             position: fixed;
             bottom: 0;
@@ -104,7 +107,6 @@
             from { transform: scaleX(0); }
             to { transform: scaleX(1); }
         }
-        /* === КОНЕЦ СТИЛЕЙ ДЛЯ НАВИГАЦИИ === */
 
         .tab-content {
             display: none;
@@ -184,6 +186,13 @@
             font-size: 0.95rem;
         }
 
+        /* === СТИЛИ ДЛЯ КНОПОК ДЕЙСТВИЙ === */
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
         .btn {
             display: inline-block;
             padding: 10px 20px;
@@ -192,18 +201,57 @@
             border-radius: 12px;
             text-decoration: none;
             text-align: center;
-            margin-top: 15px;
             font-weight: 500;
             border: none;
             cursor: pointer;
             transition: var(--transition);
-            width: 100%;
+            flex: 1; /* Кнопка "Перейти" занимает всё доступное пространство */
         }
 
         .btn:hover {
             background: #0078b4;
             transform: translateY(-2px);
         }
+
+        /* === СТИЛИ ДЛЯ КНОПКИ ЛАЙКА === */
+        .like-btn {
+            background: var(--like-button-bg);
+            border: 1px solid var(--like-button-border);
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0; /* Кнопка не сжимается */
+        }
+
+        .like-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .like-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--like-icon-default);
+            transition: fill 0.3s ease, transform 0.2s ease;
+        }
+
+        .like-btn.liked .like-icon {
+            fill: var(--like-icon-liked);
+            /* Анимация пульсации при лайке */
+            animation: pulse 0.4s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        /* === КОНЕЦ СТИЛЕЙ ДЛЯ ЛАЙКА === */
 
         .likes {
             display: flex;
@@ -266,13 +314,12 @@
             to { opacity: 0; transform: translateY(10px); }
         }
 
-        /* === НОВЫЕ СТИЛИ ДЛЯ ФИЛЬТРА === */
-       .search-container {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-        gap: 10px;
-        position: relative;
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            position: relative;
         }
 
         .search-bar {
@@ -282,7 +329,7 @@
             background: white;
             border-radius: 12px;
             padding: 12px 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Конкретное значение тени */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             transition: var(--transition);
             margin-bottom: 0;
             min-height: 46px;
@@ -317,7 +364,7 @@
             font-weight: 500;
             transition: var(--transition);
             white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Та же тень, что и у search-bar */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             min-width: 100px;
             min-height: 46px;
             display: flex;
@@ -328,10 +375,9 @@
         .filter-btn:hover {
             background: #0078b4;
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Та же тень при наведении */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* Стили для выпадающего списка фильтра */
         .filter-dropdown {
             position: absolute;
             top: 100%;
@@ -345,7 +391,7 @@
             padding: 10px 0;
             margin-top: 5px;
             min-width: 180px;
-            border: 1px solid #e5e7eb; /* Граница */
+            border: 1px solid #e5e7eb;
         }
 
         .filter-dropdown.show {
@@ -370,7 +416,6 @@
             color: var(--primary-color);
             font-weight: 500;
         }
-        /* === КОНЕЦ НОВЫХ СТИЛЕЙ === */
 
         .no-results {
             text-align: center;
@@ -387,14 +432,12 @@
             <p>Найдите лучшие каналы, боты и мини-приложения по категориям</p>
         </div>
 
-        <!-- === НОВЫЙ HTML ДЛЯ ФИЛЬТРА === -->
         <div class="search-container">
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="Поиск..." />
             </div>
             <button class="filter-btn" id="filterBtn">Фильтр ▼</button>
             
-            <!-- Выпадающий список фильтра -->
             <div class="filter-dropdown" id="filterDropdown">
                 <a href="#" class="filter-option active" data-theme="все">Все категории</a>
                 <a href="#" class="filter-option" data-theme="спорт">Спорт</a>
@@ -405,7 +448,6 @@
                 <a href="#" class="filter-option" data-theme="блоги">Блоги</a>
             </div>
         </div>
-        <!-- === КОНЕЦ НОВОГО HTML === -->
 
         <div id="channels-tab" class="tab-content active">
             <div class="loading">Загрузка каналов...</div>
@@ -426,13 +468,11 @@
         </div>
     </div>
 
-    <!-- === СТАТИЧНАЯ НАВИГАЦИЯ ВНИЗУ === -->
     <div class="bottom-tabs">
         <div class="bottom-tab active" data-tab="channels">Каналы</div>
         <div class="bottom-tab" data-tab="bots">Боты</div>
         <div class="bottom-tab" data-tab="apps">Мини-приложения</div>
     </div>
-    <!-- === КОНЕЦ НАВИГАЦИИ === -->
 
     <button id="toTopBtn" class="to-top-btn">↑</button>
 
@@ -442,19 +482,12 @@
         
         const API_URL = 'https://telegram-bot-zgkr.onrender.com';
         let searchTimeout;
+        let currentFilter = 'все';
 
-        // === НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ФИЛЬТРА ===
-        let currentFilter = 'все'; // Переменная для хранения текущего фильтра
-        // === КОНЕЦ НОВОЙ ПЕРЕМЕННОЙ ===
-
-        // === ЭЛЕМЕНТЫ ДЛЯ НОВОЙ НАВИГАЦИИ ===
         const bottomTabs = document.querySelectorAll('.bottom-tab');
-        // === КОНЕЦ ЭЛЕМЕНТОВ НАВИГАЦИИ ===
-
         const toTopBtn = document.getElementById('toTopBtn');
         const searchInput = document.getElementById('searchInput');
 
-        // === НОВЫЕ ЭЛЕМЕНТЫ И ФУНКЦИИ ДЛЯ ФИЛЬТРА ===
         const filterBtn = document.getElementById('filterBtn');
         const filterDropdown = document.getElementById('filterDropdown');
         const filterOptions = document.querySelectorAll('.filter-option');
@@ -462,7 +495,7 @@
         // Функция для применения фильтра и поиска
         function applyFiltersAndSearch() {
             const query = searchInput.value.toLowerCase().trim();
-            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab; // Изменено на bottom-tab
+            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
             const tabContent = document.getElementById(`${activeTab}-tab`);
             const cards = tabContent.querySelectorAll('.card');
 
@@ -472,10 +505,7 @@
                 const title = card.querySelector('h3').textContent.toLowerCase();
                 const theme = card.dataset.theme.toLowerCase();
                 
-                // Проверяем соответствие поисковому запросу
                 const matchesSearch = query === '' || title.includes(query) || theme.includes(query);
-                
-                // Проверяем соответствие фильтру
                 const matchesFilter = currentFilter === 'все' || theme.includes(currentFilter);
                 
                 const matches = matchesSearch && matchesFilter;
@@ -496,7 +526,6 @@
                 noResults.remove();
             }
         }
-        // === КОНЕЦ НОВЫХ ЭЛЕМЕНТОВ И ФУНКЦИЙ ===
 
         // Функция для создания URL из BLOB
         function createBlobUrl(blobData) {
@@ -509,6 +538,35 @@
                 return null;
             }
         }
+
+        // === НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ЛАЙКОВ ===
+        function handleLike(projectId, likeBtn) {
+            // Переключаем состояние лайка
+            likeBtn.classList.toggle('liked');
+            
+            // Находим элемент с количеством лайков
+            const likesCountElement = likeBtn.closest('.card').querySelector('.likes span');
+            let currentLikes = parseInt(likesCountElement.textContent) || 0;
+            
+            // Обновляем количество лайков в интерфейсе
+            if (likeBtn.classList.contains('liked')) {
+                likesCountElement.textContent = currentLikes + 1;
+            } else {
+                likesCountElement.textContent = currentLikes - 1;
+            }
+            
+            // Здесь можно добавить отправку данных на сервер
+            console.log(`Проект ${projectId} ${likeBtn.classList.contains('liked') ? 'лайкнут' : 'дизлайкнут'}`);
+            // Пример отправки на сервер:
+            // fetch(`${API_URL}/projects/${projectId}/like`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json'
+            //     },
+            //     body: JSON.stringify({ liked: likeBtn.classList.contains('liked') })
+            // });
+        }
+        // === КОНЕЦ ФУНКЦИИ ДЛЯ ЛАЙКОВ ===
 
         async function loadProjects(tabName) {
             const typeMap = {
@@ -542,6 +600,9 @@
                         iconUrl = project.icon;  
                     }
 
+                    // Генерируем уникальный ID для проекта (в реальном приложении лучше использовать ID с сервера)
+                    const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+
                     html += `
                         <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${project.theme.toLowerCase()}">
                             ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
@@ -553,7 +614,18 @@
                                 </div>
                             </div>
                             ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
-                            <a href="${project.link}" class="btn">Перейти</a>
+                            
+                            <!-- Контейнер для кнопок действий -->
+                            <div class="actions">
+                                <a href="${project.link}" class="btn">Перейти</a>
+                                <!-- Кнопка лайка -->
+                                <button class="like-btn" data-project-id="${projectId}">
+                                    <svg class="like-icon" viewBox="0 0 24 24">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            
                             <div class="likes">❤️ <span>${project.likes || 0}</span></div>
                         </div>
                     `;
@@ -561,9 +633,18 @@
 
                 tabContent.innerHTML = html;
 
-                // === ПРИМЕНЯЕМ ФИЛЬТР ПОСЛЕ ЗАГРУЗКИ ===
+                // === ДОБАВЛЯЕМ ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ КНОПОК ЛАЙКА ===
+                const likeButtons = tabContent.querySelectorAll('.like-btn');
+                likeButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault(); // Предотвращаем возможные стандартные действия
+                        const projectId = button.dataset.projectId;
+                        handleLike(projectId, button);
+                    });
+                });
+                // === КОНЕЦ ОБРАБОТЧИКОВ ЛАЙКОВ ===
+
                 applyFiltersAndSearch();
-                // === КОНЕЦ ПРИМЕНЕНИЯ ФИЛЬТРА ===
 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
@@ -575,7 +656,6 @@
             }
         }
 
-        // === ОБНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК ===
         function switchTab(tabName) {
             const activeContent = document.querySelector('.tab-content.active');
             if (activeContent) {
@@ -585,7 +665,6 @@
                 }, 300);
             }
             
-            // Обновляем активную вкладку в нижней навигации
             bottomTabs.forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
@@ -595,14 +674,10 @@
             
             loadProjects(tabName);
         }
-        // === КОНЕЦ ОБНОВЛЕННОЙ ФУНКЦИИ ===
 
-        // === НОВЫЕ ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ ФИЛЬТРА ===
-        // Обработчик клика по кнопке фильтра
         filterBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             filterDropdown.classList.toggle('show');
-            // Меняем текст кнопки для индикации состояния
             if (filterDropdown.classList.contains('show')) {
                 filterBtn.textContent = 'Фильтр ▲';
             } else {
@@ -610,7 +685,6 @@
             }
         });
 
-        // Обработчики клика по опциям фильтра
         filterOptions.forEach(option => {
             option.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -621,7 +695,6 @@
                 
                 currentFilter = option.dataset.theme;
                 
-                // Меняем текст кнопки на выбранную категорию
                 if (currentFilter === 'все') {
                     filterBtn.textContent = 'Фильтр ▼';
                 } else {
@@ -634,11 +707,9 @@
             });
         });
 
-        // Закрываем выпадающий список при клике вне его
         document.addEventListener('click', (e) => {
             if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
                 filterDropdown.classList.remove('show');
-                // Восстанавливаем текст кнопки
                 if (currentFilter === 'все') {
                     filterBtn.textContent = 'Фильтр ▼';
                 } else {
@@ -646,23 +717,17 @@
                 }
             }
         });
-        // === КОНЕЦ НОВЫХ ОБРАБОТЧИКОВ ===
 
-        // === ОБРАБОТЧИКИ ДЛЯ НОВОЙ НАВИГАЦИИ ===
         bottomTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 switchTab(tab.dataset.tab);
             });
         });
-        // === КОНЕЦ ОБРАБОТЧИКОВ НАВИГАЦИИ ===
 
-        // Поиск (обновлен для работы с фильтром)
         searchInput.addEventListener('input', function() {
              clearTimeout(searchTimeout);
              searchTimeout = setTimeout(() => {
-                  // === ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ===
                   applyFiltersAndSearch();
-                  // === КОНЕЦ ИЗМЕНЕНИЯ ===
              }, 300);
         });
 
@@ -688,9 +753,7 @@
                 });
             }
             
-            // === УСТАНОВКА АКТИВНОГО ФИЛЬТРА ПО УМОЛЧАНИЮ ===
             document.querySelector('.filter-option[data-theme="все"]').classList.add('active');
-            // === КОНЕЦ УСТАНОВКИ ===
         });
     </script>
 </body>
