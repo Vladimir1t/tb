@@ -7,6 +7,8 @@ from typing import Optional
 import threading
 import os
 
+from database_data import data
+
 
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
@@ -114,33 +116,8 @@ def init_db(db_path: str = DB_NAME):
 
     cursor.execute("SELECT COUNT(*) FROM projects") 
     if cursor.fetchone()[0] == 0:
-        test_data = [
-            ('channel', 'habr_com', 'программирование'),
-            ('channel', 'moscowmap', 'новости'),
-            ('channel', 'knigajivotnih1', 'природа'),
-            ('channel', 'miptru', 'вузы'),
-            ('channel', 'raiznews', 'Cs2'),
-            ('channel', 'bankrollo', 'экономика'),
-            ('channel', 'myachPRO', 'футбол'),
-            ('channel', 'fontankaspb', 'новости'),
-            ('channel', 'realmadridcdf', 'футбол'),
-            ('channel', 'bestiariy_mif', 'искусство'),
-            ('channel', 'ihuntnoobs', 'киберспорт'),
-            ('channel', 'SwamCapital', 'экономика'),
-            ('channel', 'truecatharsis', 'art'),
-            ('channel', 'f1_sports', 'гонки'),
-            ('channel', 'deginc17', 'футбол', 'deginc17'),
-            ('bot', 'weather_bot', 'utility'),
-            ('bot', 'finance_bot', 'finance'),
-            ('mini_app', 'puzzle_app', 'games'),
-            ('channel', 'tsiskaridzenews', 'искусство'),
-            ('channel', 'moscowach', 'новости'),
-            ('channel', 'yuriyshatunov_live', 'музыка'),
-            ('channel', 'nikitanya713', 'химия'),
-            ('channel', 'ahmatova_anna1', 'литература'),
-        ]
         
-        for item in test_data:
+        for item in data:
             avatar_bytes = get_avatar_bytes_sync(item[1])
             channel_name = get_channel_name_sync(item[1])
             subscribers = get_subscribers_count_sync(item[1])
@@ -157,6 +134,34 @@ def init_db(db_path: str = DB_NAME):
                   subscribers,
                   0,
                   avatar_bytes))
+                  
+    conn.commit()
+
+    # Загружаем модель для эмбеддингов
+    model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+    # Подключаемся к базе
+    conn = sqlite3.connect("aggregator.db")
+    cursor = conn.cursor()
+
+    # === 1. Создаём таблицу для эмбеддингов ===
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS project_embeddings (
+        project_id INTEGER PRIMARY KEY,
+        vector BLOB
+    );
+    """)
+    conn.commit()
+
+    # === 2. Заполняем эмбеддинги для всех проектов ===
+    cursor.execute("SELECT id, name, theme FROM projects;")
+    rows = cursor.fetchall()
+
+    for project_id, name, theme in rows:
+        text = f"{name or ''} {theme or ''}"
+        vector = model.encode([text])[0].astype("float32")
+        blob = vector.tobytes()
+        cursor.execute("INSERT OR REPLACE INTO project_embeddings (project_id, vector) VALUES (?, ?)", (project_id, blob))
 
     conn.commit()
     conn.close()

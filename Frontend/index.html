@@ -493,13 +493,20 @@
         const filterOptions = document.querySelectorAll('.filter-option');
 
         // Функция для применения фильтра и поиска
-        function applyFiltersAndSearch() {
+        async function applyFiltersAndSearch() {
             const query = searchInput.value.toLowerCase().trim();
             const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
             const tabContent = document.getElementById(`${activeTab}-tab`);
             const cards = tabContent.querySelectorAll('.card');
+            
+            if (query !== '') {
+                // Отправляем запрос на backend
+                const response = await fetch(`/projects/search/?query=${encodeURIComponent(query)}`);
+                const projects = await response.json();
 
-            let visibleCount = 0;
+                // Скрываем все карточки
+                cards.forEach(card => card.style.display = 'none');
+
 
             cards.forEach(card => {
                 const title = card.querySelector('h3').textContent.toLowerCase();
@@ -510,10 +517,22 @@
                 
                 const matches = matchesSearch && matchesFilter;
 
-                card.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
-            });
+                // "Нет результатов"
+                handleNoResults(tabContent, visibleCount, query);
+            } else {
+                // Старый фильтр по theme
+                let visibleCount = 0;
+                cards.forEach(card => {
+                    const theme = card.dataset.theme.toLowerCase();
+                    const matchesFilter = currentFilter === 'все' || theme.includes(currentFilter);
+                    card.style.display = matchesFilter ? '' : 'none';
+                    if (matchesFilter) visibleCount++;
+                });
+                handleNoResults(tabContent, visibleCount, query);
+            }
+        }
 
+        function handleNoResults(tabContent, visibleCount, query) {
             const noResults = tabContent.querySelector('.no-results');
             if (visibleCount === 0 && (query !== '' || currentFilter !== 'все')) {
                 if (!noResults) {
@@ -580,7 +599,7 @@
             tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
 
             try {
-                const response = await fetch(`${API_URL}/projects/?type=${apiType}`);
+                const response = await fetch(`${API_URL}/projects/?type=${apiType}`); // сделать так, чтобы только по 10 штук
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
