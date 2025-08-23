@@ -14,8 +14,12 @@ from urllib.parse import urlparse
 import logging
 import threading
 
-from database import init_db
+# from database import init_db
 from bot import run_bot 
+
+# AI search
+from sentence_transformers import SentenceTransformer
+import faiss
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -32,7 +35,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Модели данных
 class Project(BaseModel):
     id: int = None
     icon: Optional[str] = None
@@ -54,7 +56,6 @@ class User(BaseModel):
     class Config:
         json_encoders = {type(None): lambda _: None}
 
-# Валидация Telegram WebApp
 def validate_telegram_data(token: str, init_data: str):
     try:
         secret = hmac.new(
@@ -66,7 +67,50 @@ def validate_telegram_data(token: str, init_data: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+def load_embeddings():
+    conn = sqlite3.connect("aggregator.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT project_id, vector FROM project_embeddings;")
+    rows = cursor.fetchall()
+    conn.close()
+    ids = [r[0] for r in rows]
+    vectors = [np.frombuffer(r[1], dtype="float32") for r in rows]
+    return ids, np.vstack(vectors)
+
+ids, embeddings = load_embeddings()
+index = faiss.IndexFlatL2(embeddings.shape[1])
+index.add(embeddings)
+
 # API Endpoints
+@app.get("/projects/search/")
+async def search_projects(query: str, top_k: int = 10):
+    q_vec = model.encode([query]).astype("float32")
+    D, I = index.search(q_vec, k=top_k)
+
+    conn = sqlite3.connect("aggregator.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    results = []
+    for idx, dist in zip(I[0], D[0]):
+        pid = ids[idx]
+        cursor.execute("SELECT * FROM projects WHERE id=?", (pid,))
+        row = cursor.fetchone()
+        if row:
+            project = dict(row)
+            if project["icon"]:
+                project["icon"] = f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
+            else:
+                project["icon"] = None
+            project["similarity"] = float(dist)
+            results.append(project)
+
+    conn.close()
+    return results
+
 @app.get("/projects/", response_model=List[Project])
 async def get_projects(type: str = None, theme: str = None):
     conn = sqlite3.connect('aggregator.db')
@@ -109,9 +153,7 @@ async def get_projects(type: str = None, theme: str = None):
 async def create_project(project: Project, request: Request):
     if not request.headers.get('X-Telegram-Init-Data'):
         raise HTTPException(status_code=401, detail="Auth required")
-    
-    # project.icon = project.icon or get_telegram_avatar(project.link)
-    
+   
     conn = sqlite3.connect('aggregator.db')
     cursor = conn.cursor()
     cursor.execute('''
@@ -219,8 +261,7 @@ async def debug_projects():
     return projects
 
 @app.on_event("startup")
-async def startup_db():
-    # init_db()
+async def startup_bot():
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
 
