@@ -22,7 +22,7 @@ data = [
             ('channel', 'yuriyshatunov_live', 'музыка'),
             ('channel', 'nikitanya713', 'химия'),
             ('channel', 'ahmatova_anna1', 'литература'),
-            ('channel', 'etoznakmag', 'литература'),
+            ('channel', 'etoznakmag', 'философия'),
             ('channel', 'nemnogoschastliveye', 'психология'),
             ('channel', 'ctrlvteam', 'футбол'),
             ('channel', 'ahmatova_anna1', 'литература'),
