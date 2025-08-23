@@ -26,7 +26,7 @@
         body {
             background-color: var(--secondary-color);
             color: var(--text-color);
-            padding-bottom: 70px;
+            padding-bottom: 120px; /* Увеличен отступ снизу для статичной навигации */
             transition: var(--transition);
         }
 
@@ -60,19 +60,23 @@
             font-size: 1rem;
         }
 
-        .tabs {
+        /* === СТИЛИ ДЛЯ СТАТИЧНОЙ НАВИГАЦИИ ВНИЗУ === */
+        .bottom-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #e5e7eb;
-            position: sticky;
-            top: 0;
-            background-color: var(--secondary-color);
-            z-index: 100;
-            padding-bottom: 5px;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            padding: 10px 0;
         }
 
-        .tab {
-            padding: 12px 20px;
+        .bottom-tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
             cursor: pointer;
             font-weight: 500;
             color: var(--light-text);
@@ -80,26 +84,27 @@
             position: relative;
         }
 
-        .tab.active {
+        .bottom-tab.active {
             color: var(--primary-color);
         }
 
-        .tab.active::after {
+        .bottom-tab.active::after {
             content: '';
             position: absolute;
-            bottom: -6px;
-            left: 0;
-            right: 0;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
             height: 3px;
             background-color: var(--primary-color);
             border-radius: 3px 3px 0 0;
             animation: tabUnderline 0.3s ease;
         }
 
-        @keyframes tabUnderline {
+         @keyframes tabUnderline {
             from { transform: scaleX(0); }
             to { transform: scaleX(1); }
         }
+        /* === КОНЕЦ СТИЛЕЙ ДЛЯ НАВИГАЦИИ === */
 
         .tab-content {
             display: none;
@@ -212,35 +217,6 @@
             margin-left: 5px;
         }
 
-        .tg-button-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 15px;
-            background: white;
-            z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .profile-btn {
-            background: var(--accent-color);
-            font-size: 1.1rem;
-            padding: 15px 25px;
-            border-radius: 15px;
-            margin: 10px auto;
-            display: block;
-            width: auto;
-            min-width: 200px;
-        }
-
-        .profile-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
         .loading {
             text-align: center;
             padding: 20px;
@@ -291,24 +267,25 @@
         }
 
         /* === НОВЫЕ СТИЛИ ДЛЯ ФИЛЬТРА === */
-        .search-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
-            position: relative; /* Для позиционирования dropdown */
+       .search-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 10px;
+        position: relative;
         }
 
         .search-bar {
-            flex: 1; /* Занимает всё доступное пространство */
+            flex: 1;
             display: flex;
             align-items: center;
             background: white;
             border-radius: 12px;
-            padding: 10px 15px;
-            box-shadow: var(--shadow);
+            padding: 12px 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Конкретное значение тени */
             transition: var(--transition);
-            margin-bottom: 0; /* Убираем margin-bottom у search-bar */
+            margin-bottom: 0;
+            min-height: 46px;
         }
 
         .search-bar input {
@@ -317,6 +294,8 @@
             flex: 1;
             font-size: 1rem;
             color: var(--text-color);
+            height: 22px;
+            line-height: 22px;
         }
 
         .search-bar input::placeholder {
@@ -333,18 +312,23 @@
             color: white;
             border: none;
             border-radius: 12px;
-            padding: 10px 15px;
+            padding: 12px 15px;
             cursor: pointer;
             font-weight: 500;
             transition: var(--transition);
             white-space: nowrap;
-            box-shadow: var(--shadow);
-            min-width: 100px; /* Минимальная ширина */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Та же тень, что и у search-bar */
+            min-width: 100px;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .filter-btn:hover {
             background: #0078b4;
             transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Та же тень при наведении */
         }
 
         /* Стили для выпадающего списка фильтра */
@@ -403,12 +387,6 @@
             <p>Найдите лучшие каналы, боты и мини-приложения по категориям</p>
         </div>
 
-        <div class="tabs">
-            <div class="tab active" data-tab="channels">Каналы</div>
-            <div class="tab" data-tab="bots">Боты</div>
-            <div class="tab" data-tab="apps">Мини-приложения</div>
-        </div>
-
         <!-- === НОВЫЙ HTML ДЛЯ ФИЛЬТРА === -->
         <div class="search-container">
             <div class="search-bar">
@@ -448,26 +426,31 @@
         </div>
     </div>
 
-    <div class="tg-button-container">
-        <button class="btn profile-btn" id="profileBtn">Мой профиль</button>
-        <button id="toTopBtn" class="to-top-btn">↑</button>
+    <!-- === СТАТИЧНАЯ НАВИГАЦИЯ ВНИЗУ === -->
+    <div class="bottom-tabs">
+        <div class="bottom-tab active" data-tab="channels">Каналы</div>
+        <div class="bottom-tab" data-tab="bots">Боты</div>
+        <div class="bottom-tab" data-tab="apps">Мини-приложения</div>
     </div>
+    <!-- === КОНЕЦ НАВИГАЦИИ === -->
+
+    <button id="toTopBtn" class="to-top-btn">↑</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         
         const API_URL = 'https://telegram-bot-zgkr.onrender.com';
-        let currentUser = null;
         let searchTimeout;
 
         // === НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ФИЛЬТРА ===
         let currentFilter = 'все'; // Переменная для хранения текущего фильтра
         // === КОНЕЦ НОВОЙ ПЕРЕМЕННОЙ ===
 
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const profileBtn = document.getElementById('profileBtn');
+        // === ЭЛЕМЕНТЫ ДЛЯ НОВОЙ НАВИГАЦИИ ===
+        const bottomTabs = document.querySelectorAll('.bottom-tab');
+        // === КОНЕЦ ЭЛЕМЕНТОВ НАВИГАЦИИ ===
+
         const toTopBtn = document.getElementById('toTopBtn');
         const searchInput = document.getElementById('searchInput');
 
@@ -479,7 +462,7 @@
         // Функция для применения фильтра и поиска
         function applyFiltersAndSearch() {
             const query = searchInput.value.toLowerCase().trim();
-            const activeTab = document.querySelector('.tab.active').dataset.tab;
+            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab; // Изменено на bottom-tab
             const tabContent = document.getElementById(`${activeTab}-tab`);
             const cards = tabContent.querySelectorAll('.card');
 
@@ -592,6 +575,7 @@
             }
         }
 
+        // === ОБНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК ===
         function switchTab(tabName) {
             const activeContent = document.querySelector('.tab-content.active');
             if (activeContent) {
@@ -601,7 +585,8 @@
                 }, 300);
             }
             
-            tabs.forEach(tab => {
+            // Обновляем активную вкладку в нижней навигации
+            bottomTabs.forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
             
@@ -610,21 +595,7 @@
             
             loadProjects(tabName);
         }
-
-        async function loadUserProfile() {
-            if (!tg.initDataUnsafe?.user) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/users/${tg.initDataUnsafe.user.id}`);
-                const userData = await response.json();
-                currentUser = userData;
-                
-                profileBtn.textContent = `Профиль (${userData.stars}★)`;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки профиля:', error);
-            }
-        }
+        // === КОНЕЦ ОБНОВЛЕННОЙ ФУНКЦИИ ===
 
         // === НОВЫЕ ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ ФИЛЬТРА ===
         // Обработчик клика по кнопке фильтра
@@ -677,19 +648,13 @@
         });
         // === КОНЕЦ НОВЫХ ОБРАБОТЧИКОВ ===
 
-        tabs.forEach(tab => {
+        // === ОБРАБОТЧИКИ ДЛЯ НОВОЙ НАВИГАЦИИ ===
+        bottomTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 switchTab(tab.dataset.tab);
             });
         });
-
-        profileBtn.addEventListener('click', () => {
-            if (currentUser) {
-                tg.showAlert(`Ваш профиль: \n★ Звезды: ${currentUser.stars} \n💰 Баланс: ${currentUser.balance} руб.`);
-            } else {
-                tg.showAlert('Профиль не загружен. Попробуйте позже.');
-            }
-        });
+        // === КОНЕЦ ОБРАБОТЧИКОВ НАВИГАЦИИ ===
 
         // Поиск (обновлен для работы с фильтром)
         searchInput.addEventListener('input', function() {
@@ -715,7 +680,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadProjects('channels');
-            loadUserProfile();
             
             if (tg.platform !== 'unknown') {
                 tg.BackButton.show();
