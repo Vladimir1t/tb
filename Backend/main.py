@@ -123,43 +123,46 @@ async def get_projects(
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
+
     query = "SELECT * FROM projects WHERE 1=1"
     params = []
-    
+
     if type:
         type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
         query += " AND type = ?"
         params.append(type_mapping.get(type, type))
-    
+
     if theme:
         query += " AND theme = ?"
         params.append(theme)
-    
+
     if search:
-        query += " AND (name LIKE ? OR COALESCE(description,'') LIKE ?)"
+        # безопасно ищем по name и description даже если description NULL
+        query += " AND (name LIKE ? OR IFNULL(description,'') LIKE ?)"
         like_pattern = f"%{search}%"
         params.extend([like_pattern, like_pattern])
 
-    
     query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])
-    
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
+
+    try:
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+    except Exception as e:
+        conn.close()
+        raise Exception(f"Ошибка SQL-запроса: {e}")
+
     conn.close()
-    
+
     projects = []
     for row in rows:
         project = dict(row)
-        if project["icon"]: 
-            project["icon"] = (
-                f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
-            )
+        if project.get("icon"): 
+            project["icon"] = f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
         else:
             project["icon"] = None
         projects.append(project)
-    
+
     return projects
 
 @app.post("/projects/", response_model=Project)
