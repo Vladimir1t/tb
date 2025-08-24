@@ -116,26 +116,30 @@ def validate_telegram_data(token: str, init_data: str):
 async def get_projects(
     type: Optional[str] = None,
     theme: Optional[str] = None,
-    limit: int = Query(10, ge=1, le=100),  
+    search: Optional[str] = None,
+    limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0)
 ):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    query = "SELECT * FROM projects"
+    query = "SELECT * FROM projects WHERE 1=1"
     params = []
     
     if type:
         type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
-        query += " WHERE type = ?"
+        query += " AND type = ?"
         params.append(type_mapping.get(type, type))
-        if theme:
-            query += " AND theme = ?"
-            params.append(theme)
-    elif theme:
-        query += " WHERE theme = ?"
+    
+    if theme:
+        query += " AND theme = ?"
         params.append(theme)
+    
+    if search:
+        query += " AND (name LIKE ? OR description LIKE ?)"
+        like_pattern = f"%{search}%"
+        params.extend([like_pattern, like_pattern])
     
     query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])

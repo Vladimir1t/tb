@@ -484,6 +484,12 @@
         let searchTimeout;
         let currentFilter = 'все';
 
+        // let currentTab = 'channels';
+        let currentSearch = '';
+        let page = 0;
+        let loading = false;
+        let hasMore = true;
+
         const bottomTabs = document.querySelectorAll('.bottom-tab');
         const toTopBtn = document.getElementById('toTopBtn');
         const searchInput = document.getElementById('searchInput');
@@ -568,11 +574,11 @@
         }
         // === КОНЕЦ ФУНКЦИИ ДЛЯ ЛАЙКОВ ===
 
-        let page = 0;
-        let loading = false;
-        let hasMore = true;
+        // let page = 0;
+        // let loading = false;
+        // let hasMore = true;
 
-        async function loadProjects(tabName, append = false) {
+        async function loadProjects(tabName, append = false, search = '') {
             if (loading || !hasMore) return;
             loading = true;
 
@@ -587,13 +593,15 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=${page * 10}`);
+                const response = await fetch(
+                    `${API_URL}/projects/?type=${apiType}&limit=10&offset=${page * 10}&search=${encodeURIComponent(search)}`
+                );
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const projects = await response.json();
                 if (projects.length === 0) {
-                    hasMore = false;
                     if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                    hasMore = false;
                     return;
                 }
 
@@ -614,7 +622,7 @@
                                 <a href="${project.link}" class="btn">Перейти</a>
                                 <button class="like-btn" data-project-id="${projectId}">
                                     <svg class="like-icon" viewBox="0 0 24 24">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36..."/>
                                     </svg>
                                 </button>
                             </div>
@@ -629,18 +637,18 @@
                     tabContent.innerHTML = html;
                 }
 
-                // обработчики лайков
+                // лайки
                 tabContent.querySelectorAll('.like-btn').forEach(btn => {
                     btn.onclick = () => handleLike(btn.dataset.projectId, btn);
                 });
 
                 page++;
+                if (projects.length < 10) hasMore = false;
             } catch (err) {
                 console.error('Ошибка:', err);
             }
             loading = false;
         }
-
 
         function switchTab(tabName) {
             const activeContent = document.querySelector('.tab-content.active');
@@ -728,10 +736,10 @@
         // scroll
         window.addEventListener('scroll', () => {
             if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-                const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
-                loadProjects(activeTab, true);
+                loadProjects(currentTab, true, currentSearch);
             }
         });
+
 
         
         toTopBtn.addEventListener('click', function() {
