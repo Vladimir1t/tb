@@ -112,7 +112,12 @@ def validate_telegram_data(token: str, init_data: str):
 #     return results
 
 @app.get("/projects/", response_model=List[Project])
-async def get_projects(type: str = None, theme: str = None):
+async def get_projects(
+    type: Optional[str] = None,
+    theme: Optional[str] = None,
+    limit: int = Query(10, ge=1, le=100),  
+    offset: int = Query(0, ge=0)
+):
     conn = sqlite3.connect('aggregator.db')
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -131,7 +136,9 @@ async def get_projects(type: str = None, theme: str = None):
         query += " WHERE theme = ?"
         params.append(theme)
     
-    query += " ORDER BY is_premium DESC, likes DESC"
+    query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    
     cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
