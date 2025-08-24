@@ -714,9 +714,17 @@
 
         bottomTabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                switchTab(tab.dataset.tab);
+                bottomTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                currentTab = tab.dataset.tab;  // обновляем текущий таб
+                page = 0;                       // сбрасываем страницу
+                hasMore = true;                 // сбрасываем флаг подгрузки
+
+                loadProjects(currentTab, false, currentSearch); // подгружаем первые 10 элементов
             });
         });
+
 
         searchInput.addEventListener('input', function() {
              clearTimeout(searchTimeout);
@@ -747,7 +755,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadProjects('channels');
+            loadProjects(currentTab, false, currentSearch);
             
             if (tg.platform !== 'unknown') {
                 tg.BackButton.show();
