@@ -137,9 +137,10 @@ async def get_projects(
         params.append(theme)
     
     if search:
-        query += " AND (name LIKE ? OR description LIKE ?)"
+        query += " AND (name LIKE ? OR COALESCE(description,'') LIKE ?)"
         like_pattern = f"%{search}%"
         params.extend([like_pattern, like_pattern])
+
     
     query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])
