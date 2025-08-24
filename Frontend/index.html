@@ -497,78 +497,78 @@
 
     // Основная функция загрузки проектов с поиском и фильтром
     async function loadProjects(tabName, append = false) {
-        if (loading || !hasMore) return;
-        loading = true;
+    if (loading || !hasMore) return;
+    loading = true;
 
-        const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
-        const apiType = typeMap[tabName];
-        const tabContent = document.getElementById(`${tabName}-tab`);
+    const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
+    const apiType = typeMap[tabName];
+    const tabContent = document.getElementById(`${tabName}-tab`);
 
-        if (!append) {
-            tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
-            page = 0;
-            hasMore = true;
-        }
-
-        const query = searchInput.value.trim();
-        const themeFilter = currentFilter === 'все' ? '' : currentFilter;
-
-        try {
-            const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}&search=${encodeURIComponent(query)}&limit=10&offset=${page*10}`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const projects = await response.json();
-            if (projects.length === 0) {
-                hasMore = false;
-                if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
-                return;
-            }
-
-            let html = '';
-            projects.forEach(project => {
-                const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-                const iconUrl = project.icon || 'https://via.placeholder.com/48';
-                html += `
-                    <div class="card" data-theme="${project.theme.toLowerCase()}">
-                        <div class="channel-icon-container">
-                            <img src="${iconUrl}" class="channel-icon">
-                            <div class="channel-info">
-                                <h3>${project.name}</h3>
-                                <p>Тематика: ${project.theme}</p>
-                            </div>
-                        </div>
-                        <div class="actions">
-                            <a href="${project.link}" class="btn">Перейти</a>
-                            <button class="like-btn" data-project-id="${projectId}">
-                                <svg class="like-icon" viewBox="0 0 24 24">
-                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="likes">❤️ <span>${project.likes || 0}</span></div>
-                    </div>
-                `;
-            });
-
-            if (append) {
-                tabContent.insertAdjacentHTML('beforeend', html);
-            } else {
-                tabContent.innerHTML = html;
-            }
-
-            // обработчики лайков
-            tabContent.querySelectorAll('.like-btn').forEach(btn => {
-                btn.onclick = () => handleLike(btn.dataset.projectId, btn);
-            });
-
-            page++;
-        } catch (err) {
-            console.error('Ошибка:', err);
-            if (!append) tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
-        }
-
-        loading = false;
+    if (!append) {
+        tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+        page = 0;
+        hasMore = true;
     }
+
+    const query = searchInput.value.trim(); // текст поиска
+    const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр
+
+    try {
+        const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}&search=${encodeURIComponent(query)}&limit=10&offset=${page*10}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const projects = await response.json();
+        if (projects.length === 0) {
+            hasMore = false;
+            if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+            return;
+        }
+
+        let html = '';
+        projects.forEach(project => {
+            const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+            const iconUrl = project.icon || 'https://via.placeholder.com/48';
+            html += `
+                <div class="card" data-theme="${project.theme.toLowerCase()}">
+                    <div class="channel-icon-container">
+                        <img src="${iconUrl}" class="channel-icon">
+                        <div class="channel-info">
+                            <h3>${project.name}</h3>
+                            <p>Тематика: ${project.theme}</p>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <a href="${project.link}" class="btn">Перейти</a>
+                        <button class="like-btn" data-project-id="${projectId}">
+                            <svg class="like-icon" viewBox="0 0 24 24">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="likes">❤️ <span>${project.likes || 0}</span></div>
+                </div>
+            `;
+        });
+
+        if (append) {
+            tabContent.insertAdjacentHTML('beforeend', html);
+        } else {
+            tabContent.innerHTML = html;
+        }
+
+        tabContent.querySelectorAll('.like-btn').forEach(btn => {
+            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+        });
+
+        page++;
+    } catch (err) {
+        console.error('Ошибка:', err);
+        if (!append) tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+    }
+
+    loading = false;
+}
+
 
     function handleLike(projectId, likeBtn) {
         likeBtn.classList.toggle('liked');
@@ -623,10 +623,16 @@
 
     bottomTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 
-    searchInput.addEventListener('input', () => {
+    searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(applyFiltersAndSearch, 300);
+        searchTimeout = setTimeout(() => {
+            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+            page = 0; // сброс пагинации
+            hasMore = true;
+            loadProjects(activeTab, false);
+        }, 300);
     });
+
 
     window.onscroll = function() {
         toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
