@@ -568,93 +568,79 @@
         }
         // === КОНЕЦ ФУНКЦИИ ДЛЯ ЛАЙКОВ ===
 
-        async function loadProjects(tabName) {
-            const typeMap = {
-                'channels': 'channel',
-                'bots': 'bot',
-                'apps': 'mini_app'
-            };
+        let page = 0;
+        let loading = false;
+        let hasMore = true;
+
+        async function loadProjects(tabName, append = false) {
+            if (loading || !hasMore) return;
+            loading = true;
+
+            const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
             const apiType = typeMap[tabName];
-            
             const tabContent = document.getElementById(`${tabName}-tab`);
-            tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+
+            if (!append) {
+                tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+                page = 0;
+                hasMore = true;
+            }
 
             try {
-                const response = await fetch(`${API_URL}/projects/?type=${apiType}`); // сделать так, чтобы только по 10 штук
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const response = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=${page * 10}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const projects = await response.json();
-
-                if (!projects || projects.length === 0) {
-                    tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                if (projects.length === 0) {
+                    hasMore = false;
+                    if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
                     return;
                 }
 
                 let html = '';
                 projects.forEach(project => {
-                    let iconUrl = 'https://via.placeholder.com/48';
-                    if (project.icon) {
-                        iconUrl = project.icon;  
-                    }
-
-                    // Генерируем уникальный ID для проекта (в реальном приложении лучше использовать ID с сервера)
+                    let iconUrl = project.icon || 'https://via.placeholder.com/48';
                     const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-
                     html += `
-                        <div class="card ${project.is_premium ? 'premium-card' : ''}" data-theme="${project.theme.toLowerCase()}">
-                            ${project.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
+                        <div class="card" data-theme="${project.theme.toLowerCase()}">
                             <div class="channel-icon-container">
-                                <img src="${iconUrl}" class="channel-icon" alt="${project.name}">
+                                <img src="${iconUrl}" class="channel-icon">
                                 <div class="channel-info">
                                     <h3>${project.name}</h3>
                                     <p>Тематика: ${project.theme}</p>
                                 </div>
                             </div>
-                            ${project.subscribers ? `<p>Подписчиков: ${project.subscribers.toLocaleString()}</p>` : ''}
-                            
-                            <!-- Контейнер для кнопок действий -->
                             <div class="actions">
                                 <a href="${project.link}" class="btn">Перейти</a>
-                                <!-- Кнопка лайка -->
                                 <button class="like-btn" data-project-id="${projectId}">
                                     <svg class="like-icon" viewBox="0 0 24 24">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
                                     </svg>
                                 </button>
                             </div>
-                            
                             <div class="likes">❤️ <span>${project.likes || 0}</span></div>
                         </div>
                     `;
                 });
 
-                tabContent.innerHTML = html;
+                if (append) {
+                    tabContent.insertAdjacentHTML('beforeend', html);
+                } else {
+                    tabContent.innerHTML = html;
+                }
 
-                // === ДОБАВЛЯЕМ ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ КНОПОК ЛАЙКА ===
-                const likeButtons = tabContent.querySelectorAll('.like-btn');
-                likeButtons.forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.preventDefault(); // Предотвращаем возможные стандартные действия
-                        const projectId = button.dataset.projectId;
-                        handleLike(projectId, button);
-                    });
+                // обработчики лайков
+                tabContent.querySelectorAll('.like-btn').forEach(btn => {
+                    btn.onclick = () => handleLike(btn.dataset.projectId, btn);
                 });
-                // === КОНЕЦ ОБРАБОТЧИКОВ ЛАЙКОВ ===
 
-                applyFiltersAndSearch();
-
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
-                tabContent.innerHTML = `
-                    <div class="loading">
-                        Ошибка: ${error.message}<br>
-                        <button onclick="loadProjects('${tabName}')">Попробовать снова</button>
-                    </div>`;
+                page++;
+            } catch (err) {
+                console.error('Ошибка:', err);
             }
+            loading = false;
         }
+
 
         function switchTab(tabName) {
             const activeContent = document.querySelector('.tab-content.active');
@@ -738,6 +724,15 @@
                 toTopBtn.style.display = "none";
             }
         };
+
+        // scroll
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+                const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+                loadProjects(activeTab, true);
+            }
+        });
+
         
         toTopBtn.addEventListener('click', function() {
             window.scrollTo({top: 0, behavior: 'smooth'});
