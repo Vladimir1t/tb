@@ -514,13 +514,55 @@
     const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр
 
     try {
-        const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}&search=${encodeURIComponent(query)}&limit=10&offset=${page*10}`);
+        // Если поиск пустой, показываем дефолтные 10 каналов
+        const searchParam = query ? `&search=${encodeURIComponent(query)}` : '';
+
+        const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}${searchParam}&limit=10&offset=${page*10}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const projects = await response.json();
+
+        // Если поиск пустой и сервер вернул пустой массив, можно загрузить дефолтные проекты
         if (projects.length === 0) {
             hasMore = false;
-            if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+            if (!append) {
+                if (!query) {
+                    // Показать дефолтные проекты
+                    const defaultResponse = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=0`);
+                    const defaultProjects = await defaultResponse.json();
+                    let defaultHtml = '';
+                    defaultProjects.forEach(project => {
+                        const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+                        const iconUrl = project.icon || 'https://via.placeholder.com/48';
+                        defaultHtml += `
+                            <div class="card" data-theme="${project.theme.toLowerCase()}">
+                                <div class="channel-icon-container">
+                                    <img src="${iconUrl}" class="channel-icon">
+                                    <div class="channel-info">
+                                        <h3>${project.name}</h3>
+                                        <p>Тематика: ${project.theme}</p>
+                                    </div>
+                                </div>
+                                <div class="actions">
+                                    <a href="${project.link}" class="btn">Перейти</a>
+                                    <button class="like-btn" data-project-id="${projectId}">
+                                        <svg class="like-icon" viewBox="0 0 24 24">
+                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="likes">❤️ <span>${project.likes || 0}</span></div>
+                            </div>
+                        `;
+                    });
+                    tabContent.innerHTML = defaultHtml;
+                    tabContent.querySelectorAll('.like-btn').forEach(btn => {
+                        btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+                    });
+                } else {
+                    tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                }
+            }
             return;
         }
 
@@ -568,7 +610,6 @@
 
     loading = false;
 }
-
 
     function handleLike(projectId, likeBtn) {
         likeBtn.classList.toggle('liked');
