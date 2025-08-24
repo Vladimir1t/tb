@@ -138,7 +138,7 @@ async def get_projects(
 
     if search:
         # безопасно ищем по name и description даже если description NULL
-        query += " AND (name LIKE ? OR IFNULL(description,'') LIKE ?)"
+        query += " AND (name LIKE ? OR theme LIKE ?)"
         like_pattern = f"%{search}%"
         params.extend([like_pattern, like_pattern])
 
