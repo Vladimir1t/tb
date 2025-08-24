@@ -484,12 +484,6 @@
         let searchTimeout;
         let currentFilter = 'все';
 
-        // let currentTab = 'channels';
-        let currentSearch = '';
-        let page = 0;
-        let loading = false;
-        let hasMore = true;
-
         const bottomTabs = document.querySelectorAll('.bottom-tab');
         const toTopBtn = document.getElementById('toTopBtn');
         const searchInput = document.getElementById('searchInput');
@@ -578,77 +572,74 @@
         let loading = false;
         let hasMore = true;
 
-        async function loadProjects(tabName, append = false, search = '') {
-        if (loading || !hasMore) return;
-        loading = true;
+        async function loadProjects(tabName, append = false) {
+            if (loading || !hasMore) return;
+            loading = true;
 
-        const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
-        const apiType = typeMap[tabName];
-        const tabContent = document.getElementById(`${tabName}-tab`);
+            const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
+            const apiType = typeMap[tabName];
+            const tabContent = document.getElementById(`${tabName}-tab`);
 
-        if (!append) {
-            tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
-            page = 0;
-            hasMore = true;
-        }
-
-        try {
-            const response = await fetch(
-                `${API_URL}/projects/?type=${apiType}&limit=10&offset=${page * 10}&search=${encodeURIComponent(search)}`
-            );
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const projects = await response.json();
-            if (projects.length === 0) {
-                if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
-                hasMore = false;
-                return;
+            if (!append) {
+                tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+                page = 0;
+                hasMore = true;
             }
 
-            let html = '';
-            projects.forEach(project => {
-                let iconUrl = project.icon || 'https://via.placeholder.com/48';
-                const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-                html += `
-                    <div class="card" data-theme="${project.theme.toLowerCase()}">
-                        <div class="channel-icon-container">
-                            <img src="${iconUrl}" class="channel-icon">
-                            <div class="channel-info">
-                                <h3>${project.name}</h3>
-                                <p>Тематика: ${project.theme}</p>
+            try {
+                const response = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=${page * 10}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const projects = await response.json();
+                if (projects.length === 0) {
+                    hasMore = false;
+                    if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                    return;
+                }
+
+                let html = '';
+                projects.forEach(project => {
+                    let iconUrl = project.icon || 'https://via.placeholder.com/48';
+                    const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+                    html += `
+                        <div class="card" data-theme="${project.theme.toLowerCase()}">
+                            <div class="channel-icon-container">
+                                <img src="${iconUrl}" class="channel-icon">
+                                <div class="channel-info">
+                                    <h3>${project.name}</h3>
+                                    <p>Тематика: ${project.theme}</p>
+                                </div>
                             </div>
+                            <div class="actions">
+                                <a href="${project.link}" class="btn">Перейти</a>
+                                <button class="like-btn" data-project-id="${projectId}">
+                                    <svg class="like-icon" viewBox="0 0 24 24">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="likes">❤️ <span>${project.likes || 0}</span></div>
                         </div>
-                        <div class="actions">
-                            <a href="${project.link}" class="btn">Перейти</a>
-                            <button class="like-btn" data-project-id="${projectId}">
-                                <svg class="like-icon" viewBox="0 0 24 24">
-                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36..."/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="likes">❤️ <span>${project.likes || 0}</span></div>
-                    </div>
-                `;
-            });
+                    `;
+                });
 
-            if (append) {
-                tabContent.insertAdjacentHTML('beforeend', html);
-            } else {
-                tabContent.innerHTML = html;
+                if (append) {
+                    tabContent.insertAdjacentHTML('beforeend', html);
+                } else {
+                    tabContent.innerHTML = html;
+                }
+
+                // обработчики лайков
+                tabContent.querySelectorAll('.like-btn').forEach(btn => {
+                    btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+                });
+
+                page++;
+            } catch (err) {
+                console.error('Ошибка:', err);
             }
-
-            // лайки
-            tabContent.querySelectorAll('.like-btn').forEach(btn => {
-                btn.onclick = () => handleLike(btn.dataset.projectId, btn);
-            });
-
-            page++;
-            if (projects.length < 10) hasMore = false;
-        } catch (err) {
-            console.error('Ошибка:', err);
+            loading = false;
         }
-        loading = false;
-    }
 
 
         function switchTab(tabName) {
@@ -733,8 +724,7 @@
                 toTopBtn.style.display = "none";
             }
         };
-
-        // scroll
+        
         window.addEventListener('scroll', () => {
             if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
                 const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
