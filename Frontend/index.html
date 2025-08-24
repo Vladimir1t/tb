@@ -626,13 +626,9 @@
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
-            page = 0; // сброс пагинации
-            hasMore = true;
-            loadProjects(activeTab, false);
+            applyFiltersAndSearch();
         }, 300);
     });
-
 
     window.onscroll = function() {
         toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
