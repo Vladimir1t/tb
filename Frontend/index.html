@@ -477,45 +477,30 @@
         const filterOptions = document.querySelectorAll('.filter-option');
 
         // Функция для применения фильтра и поиска
-        async function applyFiltersAndSearch() {
+        function applyFiltersAndSearch() {
             const query = searchInput.value.toLowerCase().trim();
             const activeTab = document.querySelector('.tab.active').dataset.tab;
             const tabContent = document.getElementById(`${activeTab}-tab`);
             const cards = tabContent.querySelectorAll('.card');
-            
-            if (query !== '') {
-                // Отправляем запрос на backend
-                const response = await fetch(`/projects/search/?query=${encodeURIComponent(query)}`);
-                const projects = await response.json();
 
-                // Скрываем все карточки
-                cards.forEach(card => card.style.display = 'none');
+            let visibleCount = 0;
 
-                let visibleCount = 0;
-                projects.forEach(p => {
-                    const card = tabContent.querySelector(`.card[data-id="${p.id}"]`);
-                    if (card) {
-                        card.style.display = '';
-                        visibleCount++;
-                    }
-                });
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const theme = card.dataset.theme.toLowerCase();
+                
+                // Проверяем соответствие поисковому запросу
+                const matchesSearch = query === '' || title.includes(query) || theme.includes(query);
+                
+                // Проверяем соответствие фильтру
+                const matchesFilter = currentFilter === 'все' || theme.includes(currentFilter);
+                
+                const matches = matchesSearch && matchesFilter;
 
-                // "Нет результатов"
-                handleNoResults(tabContent, visibleCount, query);
-            } else {
-                // Старый фильтр по theme
-                let visibleCount = 0;
-                cards.forEach(card => {
-                    const theme = card.dataset.theme.toLowerCase();
-                    const matchesFilter = currentFilter === 'все' || theme.includes(currentFilter);
-                    card.style.display = matchesFilter ? '' : 'none';
-                    if (matchesFilter) visibleCount++;
-                });
-                handleNoResults(tabContent, visibleCount, query);
-            }
-        }
+                card.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
 
-        function handleNoResults(tabContent, visibleCount, query) {
             const noResults = tabContent.querySelector('.no-results');
             if (visibleCount === 0 && (query !== '' || currentFilter !== 'все')) {
                 if (!noResults) {
@@ -528,7 +513,6 @@
                 noResults.remove();
             }
         }
-
         // === КОНЕЦ НОВЫХ ЭЛЕМЕНТОВ И ФУНКЦИЙ ===
 
         // Функция для создания URL из BLOB

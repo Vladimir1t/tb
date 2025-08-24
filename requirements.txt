@@ -8,8 +8,3 @@ aiofiles==23.2.1
 python-dateutil==2.8.2
 pydantic==2.5.3
 pyTelegramBotAPI==4.14.0
-
-sentence-transformers==2.2.2
-huggingface-hub==0.14.1
-faiss-cpu==1.7.4
-numpy==1.26.4
