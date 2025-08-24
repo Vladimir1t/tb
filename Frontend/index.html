@@ -477,319 +477,175 @@
     <button id="toTopBtn" class="to-top-btn">↑</button>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        
-        const API_URL = 'https://telegram-bot-zgkr.onrender.com';
-        let searchTimeout;
-        let currentFilter = 'все';
+       
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-        const bottomTabs = document.querySelectorAll('.bottom-tab');
-        const toTopBtn = document.getElementById('toTopBtn');
-        const searchInput = document.getElementById('searchInput');
+    const API_URL = 'https://telegram-bot-zgkr.onrender.com';
+    let searchTimeout;
+    let currentFilter = 'все';
+    let page = 0;
+    let loading = false;
+    let hasMore = true;
 
-        const filterBtn = document.getElementById('filterBtn');
-        const filterDropdown = document.getElementById('filterDropdown');
-        const filterOptions = document.querySelectorAll('.filter-option');
+    const bottomTabs = document.querySelectorAll('.bottom-tab');
+    const toTopBtn = document.getElementById('toTopBtn');
+    const searchInput = document.getElementById('searchInput');
+    const filterBtn = document.getElementById('filterBtn');
+    const filterDropdown = document.getElementById('filterDropdown');
+    const filterOptions = document.querySelectorAll('.filter-option');
 
-        // Функция для применения фильтра и поиска
-        async function loadProjects(tabName, append = false) {
-    if (loading || !hasMore) return;
-    loading = true;
+    // Основная функция загрузки проектов с поиском и фильтром
+    async function loadProjects(tabName, append = false) {
+        if (loading || !hasMore) return;
+        loading = true;
 
-    const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
-    const apiType = typeMap[tabName];
-    const tabContent = document.getElementById(`${tabName}-tab`);
+        const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
+        const apiType = typeMap[tabName];
+        const tabContent = document.getElementById(`${tabName}-tab`);
 
-    if (!append) {
-        tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+        if (!append) {
+            tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+            page = 0;
+            hasMore = true;
+        }
+
+        const query = searchInput.value.trim();
+        const themeFilter = currentFilter === 'все' ? '' : currentFilter;
+
+        try {
+            const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}&search=${encodeURIComponent(query)}&limit=10&offset=${page*10}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const projects = await response.json();
+            if (projects.length === 0) {
+                hasMore = false;
+                if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                return;
+            }
+
+            let html = '';
+            projects.forEach(project => {
+                const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+                const iconUrl = project.icon || 'https://via.placeholder.com/48';
+                html += `
+                    <div class="card" data-theme="${project.theme.toLowerCase()}">
+                        <div class="channel-icon-container">
+                            <img src="${iconUrl}" class="channel-icon">
+                            <div class="channel-info">
+                                <h3>${project.name}</h3>
+                                <p>Тематика: ${project.theme}</p>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <a href="${project.link}" class="btn">Перейти</a>
+                            <button class="like-btn" data-project-id="${projectId}">
+                                <svg class="like-icon" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="likes">❤️ <span>${project.likes || 0}</span></div>
+                    </div>
+                `;
+            });
+
+            if (append) {
+                tabContent.insertAdjacentHTML('beforeend', html);
+            } else {
+                tabContent.innerHTML = html;
+            }
+
+            // обработчики лайков
+            tabContent.querySelectorAll('.like-btn').forEach(btn => {
+                btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+            });
+
+            page++;
+        } catch (err) {
+            console.error('Ошибка:', err);
+            if (!append) tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+        }
+
+        loading = false;
+    }
+
+    function handleLike(projectId, likeBtn) {
+        likeBtn.classList.toggle('liked');
+        const likesCountElement = likeBtn.closest('.card').querySelector('.likes span');
+        let currentLikes = parseInt(likesCountElement.textContent) || 0;
+        likesCountElement.textContent = likeBtn.classList.contains('liked') ? currentLikes + 1 : currentLikes - 1;
+        console.log(`Проект ${projectId} ${likeBtn.classList.contains('liked') ? 'лайкнут' : 'дизлайкнут'}`);
+    }
+
+    function switchTab(tabName) {
+        document.querySelector('.tab-content.active')?.classList.remove('active');
+        bottomTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName));
+        const newContent = document.getElementById(`${tabName}-tab`);
+        newContent.classList.add('active');
         page = 0;
         hasMore = true;
+        loadProjects(tabName);
     }
 
-    const query = searchInput.value.trim();
-    const themeFilter = currentFilter === 'все' ? '' : currentFilter;
-
-    try {
-        const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}&search=${encodeURIComponent(query)}&limit=10&offset=${page*10}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const projects = await response.json();
-        if (projects.length === 0) {
-            hasMore = false;
-            if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
-            return;
-        }
-
-        let html = '';
-        projects.forEach(project => {
-            const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-            const iconUrl = project.icon || 'https://via.placeholder.com/48';
-            html += `
-                <div class="card" data-theme="${project.theme.toLowerCase()}">
-                    <div class="channel-icon-container">
-                        <img src="${iconUrl}" class="channel-icon">
-                        <div class="channel-info">
-                            <h3>${project.name}</h3>
-                            <p>Тематика: ${project.theme}</p>
-                        </div>
-                    </div>
-                    <div class="actions">
-                        <a href="${project.link}" class="btn">Перейти</a>
-                        <button class="like-btn" data-project-id="${projectId}">
-                            <svg class="like-icon" viewBox="0 0 24 24">
-                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="likes">❤️ <span>${project.likes || 0}</span></div>
-                </div>
-            `;
-        });
-
-        if (append) {
-            tabContent.insertAdjacentHTML('beforeend', html);
-        } else {
-            tabContent.innerHTML = html;
-        }
-
-        // обработчики лайков
-        tabContent.querySelectorAll('.like-btn').forEach(btn => {
-            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
-        });
-
-        page++;
-    } catch (err) {
-        console.error('Ошибка:', err);
-        if (!append) tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+    function applyFiltersAndSearch() {
+        page = 0;
+        hasMore = true;
+        const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+        loadProjects(activeTab);
     }
 
-    loading = false;
-}
+    filterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filterDropdown.classList.toggle('show');
+        filterBtn.textContent = filterDropdown.classList.contains('show') ? 'Фильтр ▲' : 'Фильтр ▼';
+    });
 
-
-        // Функция для создания URL из BLOB
-        function createBlobUrl(blobData) {
-            try {
-                if (!blobData) return null;
-                const blob = new Blob([new Uint8Array(blobData)], {type: 'image/jpeg'});
-                return URL.createObjectURL(blob);
-            } catch (e) {
-                console.error('Error creating blob URL:', e);
-                return null;
-            }
-        }
-
-        // === НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ЛАЙКОВ ===
-        function handleLike(projectId, likeBtn) {
-            // Переключаем состояние лайка
-            likeBtn.classList.toggle('liked');
-            
-            // Находим элемент с количеством лайков
-            const likesCountElement = likeBtn.closest('.card').querySelector('.likes span');
-            let currentLikes = parseInt(likesCountElement.textContent) || 0;
-            
-            // Обновляем количество лайков в интерфейсе
-            if (likeBtn.classList.contains('liked')) {
-                likesCountElement.textContent = currentLikes + 1;
-            } else {
-                likesCountElement.textContent = currentLikes - 1;
-            }
-            
-            // Здесь можно добавить отправку данных на сервер
-            console.log(`Проект ${projectId} ${likeBtn.classList.contains('liked') ? 'лайкнут' : 'дизлайкнут'}`);
-            // Пример отправки на сервер:
-            // fetch(`${API_URL}/projects/${projectId}/like`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json'
-            //     },
-            //     body: JSON.stringify({ liked: likeBtn.classList.contains('liked') })
-            // });
-        }
-        // === КОНЕЦ ФУНКЦИИ ДЛЯ ЛАЙКОВ ===
-
-        let page = 0;
-        let loading = false;
-        let hasMore = true;
-
-        async function loadProjects(tabName, append = false) {
-            if (loading || !hasMore) return;
-            loading = true;
-
-            const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
-            const apiType = typeMap[tabName];
-            const tabContent = document.getElementById(`${tabName}-tab`);
-
-            if (!append) {
-                tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
-                page = 0;
-                hasMore = true;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=${page * 10}`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const projects = await response.json();
-                if (projects.length === 0) {
-                    hasMore = false;
-                    if (!append) tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
-                    return;
-                }
-
-                let html = '';
-                projects.forEach(project => {
-                    let iconUrl = project.icon || 'https://via.placeholder.com/48';
-                    const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-                    html += `
-                        <div class="card" data-theme="${project.theme.toLowerCase()}">
-                            <div class="channel-icon-container">
-                                <img src="${iconUrl}" class="channel-icon">
-                                <div class="channel-info">
-                                    <h3>${project.name}</h3>
-                                    <p>Тематика: ${project.theme}</p>
-                                </div>
-                            </div>
-                            <div class="actions">
-                                <a href="${project.link}" class="btn">Перейти</a>
-                                <button class="like-btn" data-project-id="${projectId}">
-                                    <svg class="like-icon" viewBox="0 0 24 24">
-                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28..."/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="likes">❤️ <span>${project.likes || 0}</span></div>
-                        </div>
-                    `;
-                });
-
-                if (append) {
-                    tabContent.insertAdjacentHTML('beforeend', html);
-                } else {
-                    tabContent.innerHTML = html;
-                }
-
-                // обработчики лайков
-                tabContent.querySelectorAll('.like-btn').forEach(btn => {
-                    btn.onclick = () => handleLike(btn.dataset.projectId, btn);
-                });
-
-                page++;
-            } catch (err) {
-                console.error('Ошибка:', err);
-            }
-            loading = false;
-        }
-
-
-        function switchTab(tabName) {
-            const activeContent = document.querySelector('.tab-content.active');
-            if (activeContent) {
-                activeContent.classList.add('fade-out');
-                setTimeout(() => {
-                    activeContent.classList.remove('active', 'fade-out');
-                }, 300);
-            }
-            
-            bottomTabs.forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.tab === tabName);
-            });
-            
-            const newContent = document.getElementById(`${tabName}-tab`);
-            newContent.classList.add('active');
-            
-            loadProjects(tabName);
-        }
-
-        filterBtn.addEventListener('click', (e) => {
+    filterOptions.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            filterDropdown.classList.toggle('show');
-            if (filterDropdown.classList.contains('show')) {
-                filterBtn.textContent = 'Фильтр ▲';
-            } else {
-                filterBtn.textContent = 'Фильтр ▼';
-            }
+            filterOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+            currentFilter = option.dataset.theme;
+            filterBtn.textContent = currentFilter === 'все' ? 'Фильтр ▼' : currentFilter;
+            filterDropdown.classList.remove('show');
+            applyFiltersAndSearch();
         });
+    });
 
-        filterOptions.forEach(option => {
-            option.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                filterOptions.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
-                
-                currentFilter = option.dataset.theme;
-                
-                if (currentFilter === 'все') {
-                    filterBtn.textContent = 'Фильтр ▼';
-                } else {
-                    filterBtn.textContent = currentFilter;
-                }
-                
-                filterDropdown.classList.remove('show');
-                
-                applyFiltersAndSearch();
-            });
-        });
+    document.addEventListener('click', (e) => {
+        if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
+            filterDropdown.classList.remove('show');
+            filterBtn.textContent = currentFilter === 'все' ? 'Фильтр ▼' : currentFilter;
+        }
+    });
 
-        document.addEventListener('click', (e) => {
-            if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
-                filterDropdown.classList.remove('show');
-                if (currentFilter === 'все') {
-                    filterBtn.textContent = 'Фильтр ▼';
-                } else {
-                    filterBtn.textContent = currentFilter;
-                }
-            }
-        });
+    bottomTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 
-        bottomTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                switchTab(tab.dataset.tab);
-            });
-        });
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(applyFiltersAndSearch, 300);
+    });
 
-        searchInput.addEventListener('input', function() {
-             clearTimeout(searchTimeout);
-             searchTimeout = setTimeout(() => {
-                  applyFiltersAndSearch();
-             }, 300);
-        });
+    window.onscroll = function() {
+        toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
+    };
 
-        window.onscroll = function() {
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-                toTopBtn.style.display = "block";
-            } else {
-                toTopBtn.style.display = "none";
-            }
-        };
-        
-        window.addEventListener('scroll', () => {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-                const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
-                loadProjects(activeTab, true);
-            }
-        });
+    window.addEventListener('scroll', () => {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+            loadProjects(activeTab, true);
+        }
+    });
 
-        
-        toTopBtn.addEventListener('click', function() {
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        });
+    toTopBtn.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProjects('channels');
-            
-            if (tg.platform !== 'unknown') {
-                tg.BackButton.show();
-                tg.BackButton.onClick(() => {
-                    tg.close();
-                });
-            }
-            
-            document.querySelector('.filter-option[data-theme="все"]').classList.add('active');
-        });
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProjects('channels');
+        tg.platform !== 'unknown' && tg.BackButton.show();
+        tg.platform !== 'unknown' && tg.BackButton.onClick(() => tg.close());
+    });
     </script>
 </body>
 </html>
