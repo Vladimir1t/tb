@@ -18,6 +18,7 @@ import threading
 from bot import run_bot 
 
 # AI search
+from fastapi import Query
 # from sentence_transformers import SentenceTransformer
 # import faiss
 
