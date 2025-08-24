@@ -134,36 +134,36 @@ def init_db(db_path: str = DB_NAME):
                   subscribers,
                   0,
                   avatar_bytes))
-                  
-    conn.commit()
-
-    # Загружаем модель для эмбеддингов
-    model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-
-    # Подключаемся к базе
-    conn = sqlite3.connect("aggregator.db")
-    cursor = conn.cursor()
-
-    # === 1. Создаём таблицу для эмбеддингов ===
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS project_embeddings (
-        project_id INTEGER PRIMARY KEY,
-        vector BLOB
-    );
-    """)
-    conn.commit()
-
-    # === 2. Заполняем эмбеддинги для всех проектов ===
-    cursor.execute("SELECT id, name, theme FROM projects;")
-    rows = cursor.fetchall()
-
-    for project_id, name, theme in rows:
-        text = f"{name or ''} {theme or ''}"
-        vector = model.encode([text])[0].astype("float32")
-        blob = vector.tobytes()
-        cursor.execute("INSERT OR REPLACE INTO project_embeddings (project_id, vector) VALUES (?, ?)", (project_id, blob))
 
     conn.commit()
+
+    # # Загружаем модель для эмбеддингов
+    # model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+
+    # # Подключаемся к базе
+    # conn = sqlite3.connect("aggregator.db")
+    # cursor = conn.cursor()
+
+    # # === 1. Создаём таблицу для эмбеддингов ===
+    # cursor.execute("""
+    # CREATE TABLE IF NOT EXISTS project_embeddings (
+    #     project_id INTEGER PRIMARY KEY,
+    #     vector BLOB
+    # );
+    # """)
+    # conn.commit()
+
+    # # === 2. Заполняем эмбеддинги для всех проектов ===
+    # cursor.execute("SELECT id, name, theme FROM projects;")
+    # rows = cursor.fetchall()
+
+    # for project_id, name, theme in rows:
+    #     text = f"{name or ''} {theme or ''}"
+    #     vector = model.encode([text])[0].astype("float32")
+    #     blob = vector.tobytes()
+    #     cursor.execute("INSERT OR REPLACE INTO project_embeddings (project_id, vector) VALUES (?, ?)", (project_id, blob))
+
+    # conn.commit()
     conn.close()
 
 if __name__ == "__main__":
