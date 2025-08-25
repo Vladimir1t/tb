@@ -522,6 +522,14 @@
 
             const projects = await response.json();
 
+            // Проверяем, не изменился ли поисковый запрос пока шёл запрос
+            const currentQuery = searchInput.value.trim();
+            if (currentQuery !== query) {
+                // Поисковый запрос изменился, прерываем выполнение
+                loading = false;
+                return;
+            }
+
             // Если поиск пустой и сервер вернул пустой массив, можно загрузить дефолтные проекты
             if (projects.length === 0) {
                 hasMore = false;
@@ -530,6 +538,13 @@
                         // Показать дефолтные проекты только если нет поиска и фильтра
                         const defaultResponse = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=0`);
                         const defaultProjects = await defaultResponse.json();
+                        
+                        // Снова проверяем актуальность запроса
+                        if (searchInput.value.trim() !== query) {
+                            loading = false;
+                            return;
+                        }
+                        
                         let defaultHtml = '';
                         defaultProjects.forEach(project => {
                             const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
@@ -560,9 +575,13 @@
                             btn.onclick = () => handleLike(btn.dataset.projectId, btn);
                         });
                     } else {
-                        tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                        // Показываем "Ничего не найдено" только если запрос всё ещё актуален
+                        if (searchInput.value.trim() === query) {
+                            tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                        }
                     }
                 }
+                loading = false;
                 return;
             }
 
@@ -592,6 +611,12 @@
                 `;
             });
 
+            // Проверяем актуальность запроса перед отображением
+            if (searchInput.value.trim() !== query) {
+                loading = false;
+                return;
+            }
+
             if (append) {
                 tabContent.insertAdjacentHTML('beforeend', html);
             } else {
@@ -603,10 +628,12 @@
             });
 
             page++;
-            hasMore = projects.length === 10; // Если получили 10 проектов, значит есть еще
+            hasMore = projects.length === 10;
         } catch (err) {
             console.error('Ошибка:', err);
-            if (!append) tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+            if (!append && searchInput.value.trim() === query) {
+                tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+            }
         }
 
         loading = false;
