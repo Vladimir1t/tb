@@ -112,7 +112,7 @@ def validate_telegram_data(token: str, init_data: str):
 #     conn.close()
 #     return results
 
-@app.get("/projects/") # Используем dict для простоты примера
+@app.get("/projects/", response_model=List[Project])
 async def get_projects(
     type: Optional[str] = None,
     theme: Optional[str] = None,
@@ -120,57 +120,58 @@ async def get_projects(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0)
 ):
-    conn = sqlite3.connect('aggregator.db')
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    query = "SELECT * FROM projects WHERE 1=1"
-    params = []
-
-    if type:
-        type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
-        # Приводим значение из БД и параметр к нижнему регистру
-        query += " AND LOWER(type) = ?"
-        params.append(type_mapping.get(type.lower(), type.lower()))
-
-    if theme:
-        # Приводим значение из БД и параметр к нижнему регистру
-        query += " AND LOWER(theme) = ?"
-        params.append(theme.lower())
-
-    if search:
-        # Используем LOWER() для регистронезависимого поиска
-        # В вашем коде был поиск по name и theme, а в комментарии - description.
-        # Оставил как в коде (name и theme).
-        query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
-        like_pattern = f"%{search.lower()}%"
-        params.extend([like_pattern, like_pattern])
-
-    query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
-    params.extend([limit, offset])
-
+    """
+    Эндпоинт для поиска проектов с регистронезависимой фильтрацией.
+    """
+    conn = None
     try:
+        conn = sqlite3.connect('aggregator.db')
+        conn.row_factory = sqlite3.Row  # Позволяет обращаться к столбцам по имени
+        cursor = conn.cursor()
+
+        query = "SELECT * FROM projects WHERE 1=1"
+        params = []
+
+        if type:
+            type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
+            # Приводим значение из БД и параметр к нижнему регистру
+            query += " AND LOWER(type) = ?"
+            params.append(type_mapping.get(type.lower(), type.lower()))
+
+        if theme:
+            # Приводим значение из БД и параметр к нижнему регистру
+            query += " AND LOWER(theme) = ?"
+            params.append(theme.lower())
+
+        if search:
+            # Используем LOWER() для регистронезависимого поиска по имени и теме
+            query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
+            like_pattern = f"%{search.lower()}%"
+            params.extend([like_pattern, like_pattern])
+
+        query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
         cursor.execute(query, params)
         rows = cursor.fetchall()
+
+        projects = []
+        for row in rows:
+            project_data = dict(row)
+            if project_data.get("icon"):
+                project_data["icon"] = f"data:image/png;base64,{base64.b64encode(project_data['icon']).decode()}"
+            else:
+                project_data["icon"] = None
+            projects.append(project_data)
+
+        # FastAPI автоматически проверит, что 'projects' соответствует List[Project]
+        return projects
+
     except sqlite3.Error as e:
-        # Рекомендуется ловить более конкретные исключения
-        conn.close()
-        # Для FastAPI лучше использовать HTTPException для корректного ответа клиенту
         raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
     finally:
-        # Блок finally гарантирует закрытие соединения, даже если произошла ошибка
-        conn.close()
-
-    projects = []
-    for row in rows:
-        project = dict(row)
-        if project.get("icon"):
-            project["icon"] = f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
-        else:
-            project["icon"] = None
-        projects.append(project)
-
-    return projects
+        if conn:
+            conn.close()
 
 @app.post("/projects/", response_model=Project)
 async def create_project(project: Project, request: Request):
