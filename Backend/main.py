@@ -112,7 +112,7 @@ def validate_telegram_data(token: str, init_data: str):
 #     conn.close()
 #     return results
 
-@app.get("/projects/", response_model=List[Project])
+@app.get("/projects/") # Используем dict для простоты примера
 async def get_projects(
     type: Optional[str] = None,
     theme: Optional[str] = None,
@@ -129,17 +129,21 @@ async def get_projects(
 
     if type:
         type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
-        query += " AND type = ?"
-        params.append(type_mapping.get(type, type))
+        # Приводим значение из БД и параметр к нижнему регистру
+        query += " AND LOWER(type) = ?"
+        params.append(type_mapping.get(type.lower(), type.lower()))
 
     if theme:
-        query += " AND theme = ?"
-        params.append(theme)
+        # Приводим значение из БД и параметр к нижнему регистру
+        query += " AND LOWER(theme) = ?"
+        params.append(theme.lower())
 
     if search:
-        # безопасно ищем по name и description даже если description NULL
-        query += " AND (name LIKE ? OR theme LIKE ?)"
-        like_pattern = f"%{search}%"
+        # Используем LOWER() для регистронезависимого поиска
+        # В вашем коде был поиск по name и theme, а в комментарии - description.
+        # Оставил как в коде (name и theme).
+        query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
+        like_pattern = f"%{search.lower()}%"
         params.extend([like_pattern, like_pattern])
 
     query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
@@ -148,16 +152,19 @@ async def get_projects(
     try:
         cursor.execute(query, params)
         rows = cursor.fetchall()
-    except Exception as e:
+    except sqlite3.Error as e:
+        # Рекомендуется ловить более конкретные исключения
         conn.close()
-        raise Exception(f"Ошибка SQL-запроса: {e}")
-
-    conn.close()
+        # Для FastAPI лучше использовать HTTPException для корректного ответа клиенту
+        raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
+    finally:
+        # Блок finally гарантирует закрытие соединения, даже если произошла ошибка
+        conn.close()
 
     projects = []
     for row in rows:
         project = dict(row)
-        if project.get("icon"): 
+        if project.get("icon"):
             project["icon"] = f"data:image/png;base64,{base64.b64encode(project['icon']).decode()}"
         else:
             project["icon"] = None
