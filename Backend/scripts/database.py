@@ -11,7 +11,7 @@ import random
 import os
 from datetime import datetime, timedelta
 
-from database_data import data
+from Backend.scripts.database_data import data
 
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'

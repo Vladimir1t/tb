@@ -450,15 +450,15 @@
         </div>
 
         <div id="channels-tab" class="tab-content active">
-            <div class="loading">Загрузка каналов...</div>
+            <div class="loading">Идет поиск каналов...</div>
         </div>
 
         <div id="bots-tab" class="tab-content">
-            <div class="loading">Загрузка ботов...</div>
+            <div class="loading">Идет поиск ботов...</div>
         </div>
 
         <div id="apps-tab" class="tab-content">
-            <div class="loading">Загрузка приложений...</div>
+            <div class="loading">Идет поиск приложений...</div>
         </div>
 
         <div id="help-section" class="help-section">
@@ -505,13 +505,13 @@
         const tabContent = document.getElementById(`${tabName}-tab`);
 
         if (!append) {
-            tabContent.innerHTML = '<div class="loading">Загрузка...</div>';
+            tabContent.innerHTML = '<div class="loading">Идет поиск каналов...</div>';
             page = 0;
             hasMore = true;
         }
 
         const query = searchInput.value.trim(); // текст поиска
-        const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр
+        const themeFilter = currentFilter === 'все' ? '' : currentFilter.toLowerCase(); // фильтр в нижнем регистре
 
         try {
             // Если поиск пустой, показываем дефолтные 10 каналов
@@ -602,7 +602,8 @@
                                 </svg>
                             </button>
                         </div>
-                        <div class="likes">❤️ <span>${project.likes || 0}</span></div>
+                         <p>Подписчиков: ${project.subscribers}</p>
+                        // <div class="likes">❤️ <span>${project.likes || 0}</span></div>
                     </div>
                 `;
             });
