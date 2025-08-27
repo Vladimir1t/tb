@@ -511,7 +511,7 @@
         }
 
         const query = searchInput.value.trim(); // текст поиска
-        const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр
+        const themeFilter = currentFilter === 'все' ? '' : currentFilter.toLowerCase(); // фильтр в нижнем регистре
 
         try {
             // Если поиск пустой, показываем дефолтные 10 каналов
