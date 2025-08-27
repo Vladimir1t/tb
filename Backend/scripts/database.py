@@ -7,7 +7,7 @@ from typing import Optional
 import threading
 import os
 
-from database_data import data
+from Backend.scripts.database_data import data
 
 
 API_ID = 23018155
