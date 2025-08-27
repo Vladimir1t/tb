@@ -16,7 +16,7 @@ COPY . .
 
 WORKDIR /app/Backend
 
-COPY aggregator.db aggregator.db
+COPY Backend/aggregator.db aggregator.db
 
 EXPOSE 8000
 
