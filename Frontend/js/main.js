@@ -251,7 +251,8 @@ window.addEventListener('scroll', () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
         const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
         const tabContent = document.getElementById(`${activeTab}-tab`);
-        // Добавляем индикатор загрузки перед подгрузкой
+        const loadingElements = tabContent.querySelectorAll('.loading');
+        loadingElements.forEach(el => el.remove());
         tabContent.insertAdjacentHTML('beforeend', '<div class="loading">Идёт поиск каналов...</div>');
         loadProjects(activeTab, true);
     }
