@@ -15,11 +15,6 @@ const filterBtn = document.getElementById('filterBtn');
 const filterDropdown = document.getElementById('filterDropdown');
 const filterOptions = document.querySelectorAll('.filter-option');
 
-// Функция для отображения индикатора загрузки
-function showLoadingIndicator(tabContent) {
-    tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
-}
-
 // Основная функция загрузки проектов с поиском и фильтром
 async function loadProjects(tabName, append = false) {
     if (loading || !hasMore) return;
@@ -29,9 +24,8 @@ async function loadProjects(tabName, append = false) {
     const apiType = typeMap[tabName];
     const tabContent = document.getElementById(`${tabName}-tab`);
 
-    // Отображаем индикатор загрузки при каждой новой загрузке (не при добавлении)
     if (!append) {
-        showLoadingIndicator(tabContent);
+        tabContent.innerHTML = '<div class="loading">Идет поиск каналов...</div>';
         page = 0;
         hasMore = true;
     }
