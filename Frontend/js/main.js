@@ -74,17 +74,20 @@ async function loadProjects(tabName, append = false) {
                                         <p>Тематика: ${project.theme}</p>
                                     </div>
                                 </div>
-                                <div class="actions">
-                                    <a href="${project.link}" class="btn">Перейти</a>
-                                    <button class="like-btn" data-project-id="${projectId}">
-                                        <svg class="like-icon" viewBox="0 0 24 24">
-                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                        </svg>
-                                    </button>
-                                </div>
+                                        <div class="actions">
+                                            <a href="${project.link}" class="btn">Перейти</a>
+                                            <button class="like-btn" data-project-id="${projectId}">
+                                                <svg class="like-icon" viewBox="0 0 24 24">
+                                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
                                 <div class="subscribers-mini">
-                                    <span class="subscribers-badge">
+                                     <span class="subscribers-badge">
                                         ${project.subscribers.toLocaleString()} подписчиков
+                                    </span>
+                                    <span class="likes-badge">
+                                        0
                                     </span>
                                 </div>
                             </div>
@@ -196,9 +199,11 @@ searchInput.addEventListener('blur', () => {
 
 function handleLike(projectId, likeBtn) {
     likeBtn.classList.toggle('liked');
-    const likesCountElement = likeBtn.closest('.card').querySelector('.likes span');
-    let currentLikes = parseInt(likesCountElement.textContent) || 0;
-    likesCountElement.textContent = likeBtn.classList.contains('liked') ? currentLikes + 1 : currentLikes - 1;
+    // Находим элемент с количеством лайков внутри карточки
+    const likesBadgeElement = likeBtn.closest('.card').querySelector('.likes-badge');
+    let currentLikes = parseInt(likesBadgeElement.textContent) || 0;
+    // Обновляем счетчик лайков
+    likesBadgeElement.textContent = likeBtn.classList.contains('liked') ? currentLikes + 1 : currentLikes - 1;
     console.log(`Проект ${projectId} ${likeBtn.classList.contains('liked') ? 'лайкнут' : 'дизлайкнут'}`);
 }
 
