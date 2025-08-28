@@ -112,6 +112,14 @@ async function loadProjects(tabName, append = false) {
                             const card = event.currentTarget.closest('.card');
                             const likeBtn = card.querySelector('.like-btn');
                             if (likeBtn) {
+                                // Добавляем класс clicked для запуска анимации
+                                badge.classList.add('clicked');
+                                // Убираем класс через 300 мс после завершения анимации
+                                setTimeout(() => {
+                                    badge.classList.remove('clicked');
+                                }, 300);
+
+                                // Вызываем функцию handleLike
                                 handleLike(likeBtn.dataset.projectId, likeBtn);
                             }
                         };
@@ -185,6 +193,14 @@ async function loadProjects(tabName, append = false) {
                 const card = event.currentTarget.closest('.card');
                 const likeBtn = card.querySelector('.like-btn');
                 if (likeBtn) {
+                    // Добавляем класс clicked для запуска анимации
+                    badge.classList.add('clicked');
+                    // Убираем класс через 300 мс после завершения анимации
+                    setTimeout(() => {
+                        badge.classList.remove('clicked');
+                    }, 300);
+
+                    // Вызываем функцию handleLike
                     handleLike(likeBtn.dataset.projectId, likeBtn);
                 }
             };
@@ -212,6 +228,14 @@ async function loadProjects(tabName, append = false) {
                 const card = event.currentTarget.closest('.card');
                 const likeBtn = card.querySelector('.like-btn');
                 if (likeBtn) {
+                    // Добавляем класс clicked для запуска анимации
+                    badge.classList.add('clicked');
+                    // Убираем класс через 300 мс после завершения анимации
+                    setTimeout(() => {
+                        badge.classList.remove('clicked');
+                    }, 300);
+
+                    // Вызываем функцию handleLike
                     handleLike(likeBtn.dataset.projectId, likeBtn);
                 }
             };

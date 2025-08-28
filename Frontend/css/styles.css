@@ -450,6 +450,26 @@ body {
     background: #ffebee;
     color: #c62828;
     border-color: #ffcdd2;
+    transition: all 0.3s ease;
+    cursor: pointer; /* Показываем курсор мыши как указатель */
+}
+
+.likes-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(255, 97, 97, 0.2); /* Легкая тень при наведении */
+}
+
+/* Анимация при клике */
+.likes-badge.clicked {
+    transform: scale(1.1);
+    box-shadow: 0 8px 16px rgba(255, 97, 97, 0.3);
+    animation: pulse 0.3s ease-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1.1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 /*
