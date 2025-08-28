@@ -100,6 +100,8 @@ async function loadProjects(tabName, append = false) {
                     tabContent.querySelectorAll('.like-btn').forEach(btn => {
                         btn.onclick = () => handleLike(btn.dataset.projectId, btn);
                     });
+                    page++;
+                    hasMore = projects.length === 10;
                 } else {
                     // Показываем "Ничего не найдено" только если запрос всё ещё актуален
                     if (searchInput.value.trim() === query) {
