@@ -205,7 +205,7 @@ body {
     transform: translateY(-2px);
 }
 
-/* === СТИЛИ ДЛЯ КНОПКИ ЛАЙКА === */
+/* кнопка лайка */
 .like-btn {
     background: var(--like-button-bg);
     border: 1px solid var(--like-button-border);
@@ -243,7 +243,7 @@ body {
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
 }
-/* === КОНЕЦ СТИЛЕЙ ДЛЯ ЛАЙКА === */
+/* конец кнопка лайка */
 
 .likes {
     display: flex;
@@ -455,20 +455,20 @@ body {
 }
 
 .likes-badge:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(255, 97, 97, 0.2); /* Легкая тень при наведении */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Анимация при клике */
 .likes-badge.clicked {
     transform: scale(1.1);
     box-shadow: 0 8px 16px rgba(255, 97, 97, 0.3);
-    animation: pulse 0.3s ease-out;
+    animation: pulse 0.4s ease;
 }
 
 @keyframes pulse {
-    0% { transform: scale(1.1); }
-    50% { transform: scale(1.05); }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
 
