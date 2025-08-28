@@ -423,6 +423,22 @@
             color: var(--light-text);
             font-style: italic;
         }
+        .subscribers-mini {
+            margin-top: 10px;
+        }
+
+        .subscribers-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #e8f4fd;
+            color: #1976d2;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid #bbdefb;
+        }
     </style>
 </head>
 <body>
@@ -602,7 +618,11 @@
                                 </svg>
                             </button>
                         </div>
-                         <p>Подписчиков: ${project.subscribers}</p>
+                        <div class="subscribers-mini">
+                            <span class="subscribers-badge">
+                                👥 ${project.subscribers.toLocaleString()} подписчиков
+                            </span>
+                        </div>
                        
                     </div>
                 `;
