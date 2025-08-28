@@ -25,7 +25,7 @@ async function loadProjects(tabName, append = false) {
     const tabContent = document.getElementById(`${tabName}-tab`);
 
     if (!append) {
-        tabContent.innerHTML = '<div class="loading">Идет поиск каналов...</div>';
+        tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
         page = 0;
         hasMore = true;
     }
@@ -146,6 +146,17 @@ async function loadProjects(tabName, append = false) {
             tabContent.innerHTML = html;
         }
 
+        tabContent.querySelectorAll('.like-btn').forEach(btn => {
+            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+        });
+
+        if (append) {
+            tabContent.insertAdjacentHTML('beforeend', html);
+        } else {
+            tabContent.innerHTML = html;
+        }
+        const loadingElements = tabContent.querySelectorAll('.loading');
+        loadingElements.forEach(el => el.remove());
         tabContent.querySelectorAll('.like-btn').forEach(btn => {
             btn.onclick = () => handleLike(btn.dataset.projectId, btn);
         });
