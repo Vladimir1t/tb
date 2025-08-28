@@ -100,8 +100,8 @@ async function loadProjects(tabName, append = false) {
                     tabContent.querySelectorAll('.like-btn').forEach(btn => {
                         btn.onclick = () => handleLike(btn.dataset.projectId, btn);
                     });
-                    page++;
-                    hasMore = projects.length === 10;
+                    page = 1;
+                    hasMore = defaultProjects.length === 10;
                 } else {
                     // Показываем "Ничего не найдено" только если запрос всё ещё актуален
                     if (searchInput.value.trim() === query) {
@@ -152,12 +152,6 @@ async function loadProjects(tabName, append = false) {
         if (searchInput.value.trim() !== query) {
             loading = false;
             return;
-        }
-
-        if (append) {
-            tabContent.insertAdjacentHTML('beforeend', html);
-        } else {
-            tabContent.innerHTML = html;
         }
 
         tabContent.querySelectorAll('.like-btn').forEach(btn => {
