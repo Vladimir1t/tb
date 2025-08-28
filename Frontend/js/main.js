@@ -97,8 +97,24 @@ async function loadProjects(tabName, append = false) {
                         `;
                     });
                     tabContent.innerHTML = defaultHtml;
+                    // Обработчик для кнопки лайка
                     tabContent.querySelectorAll('.like-btn').forEach(btn => {
-                        btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+                        btn.onclick = (event) => {
+                            event.stopPropagation(); // Предотвращаем двойной клик
+                            handleLike(btn.dataset.projectId, btn);
+                        };
+                    });
+
+                    // Обработчик для плашки с количеством лайков
+                    tabContent.querySelectorAll('.likes-badge').forEach(badge => {
+                        badge.onclick = (event) => {
+                            // Находим соответствующую кнопку лайка в этой карточке
+                            const card = event.currentTarget.closest('.card');
+                            const likeBtn = card.querySelector('.like-btn');
+                            if (likeBtn) {
+                                handleLike(likeBtn.dataset.projectId, likeBtn);
+                            }
+                        };
                     });
                     page = 1;
                     hasMore = defaultProjects.length === 10;
@@ -154,8 +170,24 @@ async function loadProjects(tabName, append = false) {
             return;
         }
 
+        // Обработчик для кнопки лайка
         tabContent.querySelectorAll('.like-btn').forEach(btn => {
-            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+            btn.onclick = (event) => {
+                event.stopPropagation(); // Предотвращаем двойной клик
+                handleLike(btn.dataset.projectId, btn);
+            };
+        });
+
+        // Обработчик для плашки с количеством лайков
+        tabContent.querySelectorAll('.likes-badge').forEach(badge => {
+            badge.onclick = (event) => {
+                // Находим соответствующую кнопку лайка в этой карточке
+                const card = event.currentTarget.closest('.card');
+                const likeBtn = card.querySelector('.like-btn');
+                if (likeBtn) {
+                    handleLike(likeBtn.dataset.projectId, likeBtn);
+                }
+            };
         });
 
         if (append) {
@@ -165,8 +197,24 @@ async function loadProjects(tabName, append = false) {
         }
         const loadingElements = tabContent.querySelectorAll('.loading');
         loadingElements.forEach(el => el.remove());
+        // Обработчик для кнопки лайка
         tabContent.querySelectorAll('.like-btn').forEach(btn => {
-            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+            btn.onclick = (event) => {
+                event.stopPropagation(); // Предотвращаем двойной клик
+                handleLike(btn.dataset.projectId, btn);
+            };
+        });
+
+        // Обработчик для плашки с количеством лайков
+        tabContent.querySelectorAll('.likes-badge').forEach(badge => {
+            badge.onclick = (event) => {
+                // Находим соответствующую кнопку лайка в этой карточке
+                const card = event.currentTarget.closest('.card');
+                const likeBtn = card.querySelector('.like-btn');
+                if (likeBtn) {
+                    handleLike(likeBtn.dataset.projectId, likeBtn);
+                }
+            };
         });
 
         page++;

@@ -415,10 +415,44 @@ body {
     color: var(--light-text);
     font-style: italic;
 }
+
 .subscribers-mini {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center; /* Центрирование по вертикали */
+    gap: 10px; /* Отступ между плашками */
     margin-top: 10px;
 }
 
+.subscribers-badge,
+.likes-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    border: 1px solid;
+    text-align: center;
+    min-height: 32px; /* Общая минимальная высота */
+}
+
+/* Плашка подписчиков */
+.subscribers-badge {
+    background: #e8f4fd;
+    color: #1976d2;
+    border-color: #bbdefb;
+}
+
+/* Плашка лайков */
+.likes-badge {
+    background: #ffebee;
+    color: #c62828;
+    border-color: #ffcdd2;
+}
+
+/*
 .subscribers-badge {
     display: inline-flex;
     align-items: center;
@@ -431,20 +465,20 @@ body {
     font-weight: 500;
     border: 1px solid #bbdefb;
 }
-
 .likes-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: #ffebee; /* Очень светло-красный фон */
-    color: #c62828; /* Темно-красный текст */
+    background: #ffebee; 
+    color: #c62828; 
     border-radius: 20px;
     font-size: 0.9em;
     font-weight: 500;
-    border: 1px solid #ffcdd2; /* Светло-красная рамка */
-    margin-left: 8px; /* Отступ слева от подписчиков */
-}
+    border: 1px solid #ffcdd2; 
+    margin-left: 8px; /
+} */
+
 
 .likes-icon-inline {
     width: 16px;
