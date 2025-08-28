@@ -234,7 +234,6 @@ body {
 
 .like-btn.liked .like-icon {
     fill: var(--like-icon-liked);
-    /* Анимация пульсации при лайке */
     animation: pulse 0.4s ease;
 }
 
@@ -242,8 +241,7 @@ body {
     0% { transform: scale(1); }
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
-}
-/* конец кнопка лайка */
+} 
 
 .likes {
     display: flex;
@@ -459,7 +457,6 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Анимация при клике */
 .likes-badge.clicked {
     transform: scale(1.1);
     box-shadow: 0 8px 16px rgba(255, 97, 97, 0.3);
