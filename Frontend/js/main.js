@@ -25,7 +25,7 @@ async function loadProjects(tabName, append = false) {
     const tabContent = document.getElementById(`${tabName}-tab`);
 
     if (!append) {
-        tabContent.innerHTML = '<div class="loading">Идет поиск каналов...</div>';
+        tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
         page = 0;
         hasMore = true;
     }
