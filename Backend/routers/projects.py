@@ -1,6 +1,6 @@
 # routers/projects.py
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 import sqlite3
 import base64
 from models import Project
@@ -9,7 +9,7 @@ from auth import verify_telegram_auth
 
 router = APIRouter()
 
-@router.get("/projects/", response_model=Dict[str, Any])
+@router.get("/projects/", response_model=List[Project])
 async def get_projects(
     type: Optional[str] = None,
     theme: Optional[str] = None,
@@ -21,50 +21,21 @@ async def get_projects(
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Базовый запрос для данных с DISTINCT
-        query = """
-            SELECT DISTINCT 
-                id, name, type, theme, description, 
-                link, is_premium, likes, icon, created_at
-            FROM projects 
-            WHERE 1=1
-        """
+        query = "SELECT * FROM projects WHERE 1=1"
         params = []
-        count_params = []
 
         if type:
             type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
             query += " AND LOWER(type) = ?"
-            type_value = type_mapping.get(type.lower(), type.lower())
-            params.append(type_value)
-            count_params.append(type_value)
-        
+            params.append(type_mapping.get(type.lower(), type.lower()))
         if theme:
             query += " AND LOWER(theme) = ?"
-            theme_value = theme.lower()
-            params.append(theme_value)
-            count_params.append(theme_value)
-        
+            params.append(theme.lower())
         if search:
             query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
             like_pattern = f"%{search.lower()}%"
             params.extend([like_pattern, like_pattern])
-            count_params.extend([like_pattern, like_pattern])
 
-        # Запрос для подсчета общего количества уникальных записей
-        count_query = "SELECT COUNT(DISTINCT id) FROM projects WHERE 1=1"
-        if type:
-            count_query += " AND LOWER(type) = ?"
-        if theme:
-            count_query += " AND LOWER(theme) = ?"
-        if search:
-            count_query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
-
-        cursor.execute(count_query, count_params)
-        total_count = cursor.fetchone()[0]
-
-        # Добавляем сортировку и пагинацию к основному запросу
         query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
 
@@ -79,18 +50,7 @@ async def get_projects(
             else:
                 project_data["icon"] = None
             projects.append(project_data)
-
-        # Возвращаем данные с информацией о пагинации
-        return {
-            "projects": projects,
-            "pagination": {
-                "total": total_count,
-                "limit": limit,
-                "offset": offset,
-                "has_more": (offset + limit) < total_count
-            }
-        }
-        
+        return projects
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
     finally:
