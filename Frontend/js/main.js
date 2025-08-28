@@ -83,11 +83,11 @@ async function loadProjects(tabName, append = false) {
                                             </button>
                                         </div>
                                 <div class="subscribers-mini">
+                                    <span class="likes-badge">
+                                        100
+                                     </span>
                                      <span class="subscribers-badge">
                                         ${project.subscribers.toLocaleString()} подписчиков
-                                     </span>
-                                     <span class="likes-badge">
-                                        100
                                      </span>
                                 </div>
                             </div>
