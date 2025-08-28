@@ -431,3 +431,17 @@ body {
     font-weight: 500;
     border: 1px solid #bbdefb;
 }
+
+.likes-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #ffebee; /* Очень светло-красный фон */
+    color: #c62828; /* Темно-красный текст */
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    border: 1px solid #ffcdd2; /* Светло-красная рамка */
+    margin-left: 8px; /* Отступ слева от подписчиков */
+}
