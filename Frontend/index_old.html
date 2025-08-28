@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Catalog</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary-color: #0088cc;
+            --secondary-color: #f8f9fa;
+            --accent-color: #17bf63;
+            --text-color: #333333;
+            --light-text: #6c757d;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            /* Новые переменные для лайка */
+            --like-button-bg: white;
+            --like-button-border: #e0e0e0;
+            --like-icon-default: #9e9e9e;
+            --like-icon-liked: #ff5252;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            padding-bottom: 120px;
+            transition: var(--transition);
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 15px;
+            animation: fadeIn 0.5s ease;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-top: 15px;
+        }
+
+        .header h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--light-text);
+            font-size: 1rem;
+        }
+
+        .bottom-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            padding: 10px 0;
+        }
+
+        .bottom-tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--light-text);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .bottom-tab.active {
+            color: var(--primary-color);
+        }
+
+        .bottom-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+            animation: tabUnderline 0.3s ease;
+        }
+
+         @keyframes tabUnderline {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInContent 0.4s ease;
+        }
+
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .premium-card {
+            border: 2px solid #ffc107;
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #ffc107;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .channel-icon-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .channel-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .channel-info {
+            flex: 1;
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .card p {
+            color: var(--light-text);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* === СТИЛИ ДЛЯ КНОПОК ДЕЙСТВИЙ === */
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            flex: 1; /* Кнопка "Перейти" занимает всё доступное пространство */
+        }
+
+        .btn:hover {
+            background: #0078b4;
+            transform: translateY(-2px);
+        }
+
+        /* === СТИЛИ ДЛЯ КНОПКИ ЛАЙКА === */
+        .like-btn {
+            background: var(--like-button-bg);
+            border: 1px solid var(--like-button-border);
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0; /* Кнопка не сжимается */
+        }
+
+        .like-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .like-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--like-icon-default);
+            transition: fill 0.3s ease, transform 0.2s ease;
+        }
+
+        .like-btn.liked .like-icon {
+            fill: var(--like-icon-liked);
+            /* Анимация пульсации при лайке */
+            animation: pulse 0.4s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        /* === КОНЕЦ СТИЛЕЙ ДЛЯ ЛАЙКА === */
+
+        .likes {
+            display: flex;
+            align-items: center;
+            margin-top: 12px;
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+
+        .likes span {
+            margin-left: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease;
+        }
+
+        .help-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .help-btn {
+            background: #6c757d;
+            margin: 15px auto;
+        }
+
+        .help-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .to-top-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            position: relative;
+        }
+
+        .search-bar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 12px;
+            padding: 12px 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: var(--transition);
+            margin-bottom: 0;
+            min-height: 46px;
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 1rem;
+            color: var(--text-color);
+            height: 22px;
+            line-height: 22px;
+        }
+
+        .search-bar input::placeholder {
+            color: var(--light-text);
+        }
+
+        .search-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            min-width: 100px;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .filter-btn:hover {
+            background: #0078b4;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            padding: 10px 0;
+            margin-top: 5px;
+            min-width: 180px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .filter-dropdown.show {
+            display: flex;
+        }
+
+        .filter-option {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-color);
+            text-decoration: none;
+            display: block;
+        }
+
+        .filter-option:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .filter-option.active {
+            background-color: #e3f2fd;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            font-style: italic;
+        }
+        .subscribers-mini {
+            margin-top: 10px;
+        }
+
+        .subscribers-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #e8f4fd;
+            color: #1976d2;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid #bbdefb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Telegram Catalog</h2>
+            <p>Найдите лучшие каналы, боты и мини-приложения по категориям</p>
+        </div>
+
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Поиск..." />
+            </div>
+            <button class="filter-btn" id="filterBtn">Фильтр ▼</button>
+            
+            <div class="filter-dropdown" id="filterDropdown">
+                <a href="#" class="filter-option active" data-theme="все">Все категории</a>
+                <a href="#" class="filter-option" data-theme="спорт">Спорт</a>
+                <a href="#" class="filter-option" data-theme="новости">Новости</a>
+                <a href="#" class="filter-option" data-theme="наука">Наука</a>
+                <a href="#" class="filter-option" data-theme="искусство">Искусство</a>
+                <a href="#" class="filter-option" data-theme="путешествия">Путешествия</a>
+                <a href="#" class="filter-option" data-theme="блоги">Блоги</a>
+            </div>
+        </div>
+
+        <div id="channels-tab" class="tab-content active">
+            <div class="loading">Идет поиск каналов...</div>
+        </div>
+
+        <div id="bots-tab" class="tab-content">
+            <div class="loading">Идет поиск ботов...</div>
+        </div>
+
+        <div id="apps-tab" class="tab-content">
+            <div class="loading">Идет поиск приложений...</div>
+        </div>
+
+        <div id="help-section" class="help-section">
+            <h3>Справка и поддержка</h3>
+            <a href="https://t.me/requestsaggregator_bot" class="btn help-btn">Бот поддержки</a>
+            <a href="https://t.me/aggregator_support" class="btn help-btn">FAQ</a>
+        </div>
+    </div>
+
+    <div class="bottom-tabs">
+        <div class="bottom-tab active" data-tab="channels">Каналы</div>
+        <div class="bottom-tab" data-tab="bots">Боты</div>
+        <div class="bottom-tab" data-tab="apps">Мини-приложения</div>
+    </div>
+
+    <button id="toTopBtn" class="to-top-btn">↑</button>
+
+    <script>
+       
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const API_URL = 'https://telegram-bot-zgkr.onrender.com';
+    let searchTimeout;
+    let currentFilter = 'все';
+    let page = 0;
+    let hasMore = true;
+    let loading = false;
+   
+    const bottomTabs = document.querySelectorAll('.bottom-tab');
+    const toTopBtn = document.getElementById('toTopBtn');
+    const searchInput = document.getElementById('searchInput');
+    const filterBtn = document.getElementById('filterBtn');
+    const filterDropdown = document.getElementById('filterDropdown');
+    const filterOptions = document.querySelectorAll('.filter-option');
+
+    // Основная функция загрузки проектов с поиском и фильтром
+    async function loadProjects(tabName, append = false) {
+        if (loading || !hasMore) return;
+        loading = true;
+
+        const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
+        const apiType = typeMap[tabName];
+        const tabContent = document.getElementById(`${tabName}-tab`);
+
+        if (!append) {
+            tabContent.innerHTML = '<div class="loading">Идет поиск каналов...</div>';
+            page = 0;
+            hasMore = true;
+        }
+
+        const query = searchInput.value.trim(); // текст поиска
+        const themeFilter = currentFilter === 'все' ? '' : currentFilter.toLowerCase(); // фильтр в нижнем регистре
+
+        try {
+            // Если поиск пустой, показываем дефолтные 10 каналов
+            const searchParam = query ? `&search=${encodeURIComponent(query)}` : '';
+
+            const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}${searchParam}&limit=10&offset=${page*10}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const projects = await response.json();
+
+            // Проверяем, не изменился ли поисковый запрос пока шёл запрос
+            const currentQuery = searchInput.value.trim();
+            if (currentQuery !== query) {
+                loading = false;
+                return;
+            }
+
+            if (projects.length === 0) {
+                hasMore = false;
+                if (!append) {
+                    if (!query && !themeFilter) {
+                        const defaultResponse = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=0`);
+                        const defaultProjects = await defaultResponse.json();
+                        
+                        if (searchInput.value.trim() !== query) {
+                            loading = false;
+                            return;
+                        }
+                        
+                        let defaultHtml = '';
+                        defaultProjects.forEach(project => {
+                            const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+                            const iconUrl = project.icon || 'https://via.placeholder.com/48';
+                            defaultHtml += `
+                                <div class="card" data-theme="${project.theme.toLowerCase()}">
+                                    <div class="channel-icon-container">
+                                        <img src="${iconUrl}" class="channel-icon">
+                                        <div class="channel-info">
+                                            <h3>${project.name}</h3>
+                                            <p>Тематика: ${project.theme}</p>
+                                        </div>
+                                    </div>
+                                    <div class="actions">
+                                        <a href="${project.link}" class="btn">Перейти</a>
+                                        <button class="like-btn" data-project-id="${projectId}">
+                                            <svg class="like-icon" viewBox="0 0 24 24">
+                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="subscribers-mini">
+                                        <span class="subscribers-badge">
+                                            ${project.subscribers.toLocaleString()} подписчиков
+                                        </span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        tabContent.innerHTML = defaultHtml;
+                        tabContent.querySelectorAll('.like-btn').forEach(btn => {
+                            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+                        });
+                    } else {
+                        // Показываем "Ничего не найдено" только если запрос всё ещё актуален
+                        if (searchInput.value.trim() === query) {
+                            tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                        }
+                    }
+                }
+                loading = false;
+                return;
+            }
+
+            let html = '';
+            projects.forEach(project => {
+                const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+                const iconUrl = project.icon || 'https://via.placeholder.com/48';
+                html += `
+                    <div class="card" data-theme="${project.theme.toLowerCase()}">
+                        <div class="channel-icon-container">
+                            <img src="${iconUrl}" class="channel-icon">
+                            <div class="channel-info">
+                                <h3>${project.name}</h3>
+                                <p>Тематика: ${project.theme}</p>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <a href="${project.link}" class="btn">Перейти</a>
+                            <button class="like-btn" data-project-id="${projectId}">
+                                <svg class="like-icon" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="subscribers-mini">
+                            <span class="subscribers-badge">
+                                ${project.subscribers.toLocaleString()} подписчиков
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (searchInput.value.trim() !== query) {
+                loading = false;
+                return;
+            }
+
+            if (append) {
+                tabContent.insertAdjacentHTML('beforeend', html);
+            } else {
+                tabContent.innerHTML = html;
+            }
+
+            tabContent.querySelectorAll('.like-btn').forEach(btn => {
+                btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+            });
+
+            page++;
+            hasMore = projects.length === 10;
+        } catch (err) {
+            console.error('Ошибка:', err);
+            if (!append && searchInput.value.trim() === query) {
+                tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+            }
+        }
+
+        loading = false;
+    }
+
+    function resetSearch() {
+        searchInput.value = '';
+        loadProjects(getActiveTab(), false);
+    }
+
+    function resetFilter() {
+        currentFilter = 'все';
+        loadProjects(getActiveTab(), false);
+    }
+
+    function getActiveTab() {
+        const activeTab = document.querySelector('.tab.active');
+        return activeTab ? activeTab.dataset.tab : 'channels';
+    }
+
+    searchInput.addEventListener('blur', () => {
+        if (searchInput.value === '') {
+            loadProjects(getActiveTab(), false);
+        }
+    });
+
+    function handleLike(projectId, likeBtn) {
+        likeBtn.classList.toggle('liked');
+        const likesCountElement = likeBtn.closest('.card').querySelector('.likes span');
+        let currentLikes = parseInt(likesCountElement.textContent) || 0;
+        likesCountElement.textContent = likeBtn.classList.contains('liked') ? currentLikes + 1 : currentLikes - 1;
+        console.log(`Проект ${projectId} ${likeBtn.classList.contains('liked') ? 'лайкнут' : 'дизлайкнут'}`);
+    }
+
+    function switchTab(tabName) {
+        document.querySelector('.tab-content.active')?.classList.remove('active');
+        bottomTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName));
+        const newContent = document.getElementById(`${tabName}-tab`);
+        newContent.classList.add('active');
+        page = 0;
+        hasMore = true;
+        loadProjects(tabName);
+    }
+
+    function applyFiltersAndSearch() {
+        page = 0;
+        hasMore = true;
+        const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+        loadProjects(activeTab);
+    }
+
+    filterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filterDropdown.classList.toggle('show');
+        filterBtn.textContent = filterDropdown.classList.contains('show') ? 'Фильтр ▲' : 'Фильтр ▼';
+    });
+
+    filterOptions.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            filterOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+            currentFilter = option.dataset.theme;
+            filterBtn.textContent = currentFilter === 'все' ? 'Фильтр ▼' : currentFilter;
+            filterDropdown.classList.remove('show');
+            applyFiltersAndSearch();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
+            filterDropdown.classList.remove('show');
+            filterBtn.textContent = currentFilter === 'все' ? 'Фильтр ▼' : currentFilter;
+        }
+    });
+
+    bottomTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            applyFiltersAndSearch();
+        }, 300);
+    });
+
+    window.onscroll = function() {
+        toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
+    };
+
+    window.addEventListener('scroll', () => {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+            const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+            loadProjects(activeTab, true);
+        }
+    });
+
+    toTopBtn.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProjects('channels');
+        tg.platform !== 'unknown' && tg.BackButton.show();
+        tg.platform !== 'unknown' && tg.BackButton.onClick(() => tg.close());
+    });
+    </script>
+</body>
+</html>
