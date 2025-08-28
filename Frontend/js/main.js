@@ -87,7 +87,7 @@ async function loadProjects(tabName, append = false) {
                                         ${project.subscribers.toLocaleString() || 0} подписчиков
                                      </span>
                                      <span class="likes-badge">
-                                        ${project.likes || 0}
+                                        ${project.likes || 0} лайков 
                                      </span>
                                 </div>
                             </div>
