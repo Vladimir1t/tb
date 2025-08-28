@@ -445,3 +445,11 @@ body {
     border: 1px solid #ffcdd2; /* Светло-красная рамка */
     margin-left: 8px; /* Отступ слева от подписчиков */
 }
+
+.likes-icon-inline {
+    width: 16px;
+    height: 16px;
+    fill: #c62828; /* Темно-красный цвет */
+    vertical-align: middle;
+    margin-right: 4px; /* Отступ справа от иконки до числа */
+}
