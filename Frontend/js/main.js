@@ -17,7 +17,7 @@ const filterOptions = document.querySelectorAll('.filter-option');
 
 // Функция для отображения индикатора загрузки
 function showLoadingIndicator(tabContent) {
-    tabContent.innerHTML = '<div class="loading">Идет поиск каналов...</div>';
+    tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
 }
 
 // Основная функция загрузки проектов с поиском и фильтром
@@ -256,6 +256,9 @@ window.onscroll = function() {
 window.addEventListener('scroll', () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
         const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
+        const tabContent = document.getElementById(`${activeTab}-tab`);
+        // Добавляем индикатор загрузки перед подгрузкой
+        tabContent.insertAdjacentHTML('beforeend', '<div class="loading">Идёт поиск каналов...</div>');
         loadProjects(activeTab, true);
     }
 });
