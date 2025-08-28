@@ -150,6 +150,17 @@ async function loadProjects(tabName, append = false) {
             btn.onclick = () => handleLike(btn.dataset.projectId, btn);
         });
 
+        if (append) {
+            tabContent.insertAdjacentHTML('beforeend', html);
+        } else {
+            tabContent.innerHTML = html;
+        }
+        const loadingElements = tabContent.querySelectorAll('.loading');
+        loadingElements.forEach(el => el.remove());
+        tabContent.querySelectorAll('.like-btn').forEach(btn => {
+            btn.onclick = () => handleLike(btn.dataset.projectId, btn);
+        });
+
         page++;
         hasMore = projects.length === 10;
     } catch (err) {
