@@ -29,8 +29,9 @@ async def get_projects(
             query += " AND LOWER(type) = ?"
             params.append(type_mapping.get(type.lower(), type.lower()))
         if theme:
-            query += " AND LOWER(theme) = ?"
-            params.append(theme.lower())
+            query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
+            like_pattern = f"%{theme.lower()}%"
+            params.extend([like_pattern, like_pattern])
         if search:
             query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
             like_pattern = f"%{search.lower()}%"
