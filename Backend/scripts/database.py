@@ -11,15 +11,14 @@ import random
 import os
 from datetime import datetime, timedelta
 
-from Backend.scripts.database_data import data
+from database_data import data
 
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
 SESSION_NAME = 'session_1'
-BOT_TOKEN = ""
-DB_NAME = 'aggregator.db'
+BOT_TOKEN = "8061139238:AAGIHE-iCD_ztXP_ak4jCvo7E9sTOwQxIoU"
+DB_NAME = 'Backend/aggregator.db'
 
-# Глобальная блокировка для синхронизации запросов
 _request_lock = threading.Lock()
 _last_request_time = 0
 _flood_wait_times = {}
@@ -35,7 +34,7 @@ def _run_in_thread(coro):
             result = loop.run_until_complete(coro)
         except Exception as e:
             print(f"Ошибка в потоке: {e}")
-            result = (None, None, 0)  # Возвращаем кортеж вместо None
+            result = (None, None, 0) 
         finally:
             loop.close()
     
@@ -53,7 +52,6 @@ def should_skip_due_to_flood_wait(username: str) -> bool:
             print(f"⏳ Пропускаем {username} из-за flood wait, осталось {remaining:.0f} сек")
             return True
         else:
-            # Время ожидания прошло, удаляем из списка
             del _flood_wait_times[username]
     return False
 
@@ -67,7 +65,7 @@ async def _get_avatar_bytes_with_client(username: str, client: TelegramClient) -
     except FloodWaitError as e:
         print(f"⏳ Flood wait для {username}: {e.seconds} секунд")
         # Сохраняем время, до которого нужно ждать
-        wait_until = datetime.now() + timedelta(seconds=e.seconds + 60)  # +60 сек на всякий случай
+        wait_until = datetime.now() + timedelta(seconds=e.seconds + 60)  
         _flood_wait_times[username] = wait_until
         return None
     except Exception as e:
@@ -84,7 +82,7 @@ async def get_channel_name_with_client(username: str, client: TelegramClient) ->
         print(f"⏳ Flood wait для {username}: {e.seconds} секунд")
         wait_until = datetime.now() + timedelta(seconds=e.seconds + 60)
         _flood_wait_times[username] = wait_until
-        return username  # Возвращаем username как fallback
+        return username  
     except Exception as e:
         print(f"❌ Ошибка имени для {username}: {e}")
         return username
@@ -108,7 +106,6 @@ async def get_subscribers_count_with_client(username: str, client: TelegramClien
 def get_telegram_data_sync(username: str) -> Tuple[Optional[bytes], Optional[str], int]:
     """Получает все данные для одного канала"""
     
-    # Проверяем, не нужно ли пропустить из-за flood wait
     if should_skip_due_to_flood_wait(username):
         return None, username, 0
     
@@ -131,7 +128,6 @@ def get_telegram_data_sync(username: str) -> Tuple[Optional[bytes], Optional[str
         try:
             await client.start(bot_token=BOT_TOKEN)
             
-            # Получаем данные с обработкой ошибок
             avatar_bytes = await _get_avatar_bytes_with_client(username, client)
             channel_name = await get_channel_name_with_client(username, client)
             subscribers = await get_subscribers_count_with_client(username, client)
@@ -177,10 +173,8 @@ def add_new_chanels(db_path: str = DB_NAME):
         username = item[1]
         print(f"\n📊 Обрабатываем канал {i}/{len(data)}: {username}")
         
-        # Получаем данные с задержками
         result = get_telegram_data_sync(username)
         
-        # Проверяем, что результат не None
         if result is None:
             print(f"⚠️  Не удалось получить данные для {username}, пропускаем")
             skipped += 1
@@ -188,7 +182,6 @@ def add_new_chanels(db_path: str = DB_NAME):
             
         avatar_bytes, channel_name, subscribers = result
         
-        # Если канал пропущен из-за flood wait
         if username in _flood_wait_times:
             print(f"⏳ Пропускаем вставку {username} из-за flood wait")
             skipped += 1
@@ -230,7 +223,6 @@ def init_db(db_path: str = DB_NAME):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        # Создаем таблицы
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
