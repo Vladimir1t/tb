@@ -31,7 +31,12 @@ async function loadProjects(tabName, append = false) {
     }
 
     const query = searchInput.value.trim(); // текст поиска
-    const themeFilter = currentFilter === 'все' ? '' : currentFilter.toLowerCase(); // фильтр в нижнем регистре
+    const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр в нижнем регистре
+
+    console.log("Текущий фильтр (currentFilter):", currentFilter);
+    console.log("Тип API (apiType):", apiType);
+    console.log("Поисковый запрос (query):", query);
+    console.log("Фильтр по теме (themeFilter):", themeFilter);
 
     try {
         // Если поиск пустой, показываем дефолтные 10 каналов
@@ -41,6 +46,7 @@ async function loadProjects(tabName, append = false) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const projects = await response.json();
+        console.log(`Ответ сервера для фильтра "${currentFilter}" (тип: ${apiType}):`, projects); // <-- Добавлено логирование
 
         // Проверяем, не изменился ли поисковый запрос пока шёл запрос
         const currentQuery = searchInput.value.trim();
