@@ -16,7 +16,7 @@ from database_data import data
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
 SESSION_NAME = 'session_1'
-BOT_TOKEN = "8061139238:AAGIHE-iCD_ztXP_ak4jCvo7E9sTOwQxIoU"
+BOT_TOKEN = ""
 DB_NAME = 'Backend/aggregator.db'
 
 _request_lock = threading.Lock()
