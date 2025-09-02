@@ -459,7 +459,7 @@ window.addEventListener('scroll', () => {
         const tabContent = document.getElementById(`${activeTab}-tab`);
         const loadingElements = tabContent.querySelectorAll('.loading');
         loadingElements.forEach(el => el.remove());
-        tabContent.insertAdjacentHTML('beforeend', '<div class="loading">Идёт поиск каналов...</div>');
+        tabContent.insertAdjacentHTML('beforeend', '<div class="loading">Загрузка...</div>');
         loadProjects(activeTab, true);
     }
 });
