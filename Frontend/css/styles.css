@@ -117,20 +117,45 @@ body {
     background: linear-gradient(to top, #ffffff, #f8f9fa); 
 }
 
+/*
 .bottom-tab {
     flex: 1;
-    padding: 14px 0;
+    padding: 12px 0;
     text-align: center;
     cursor: pointer;
     font-weight: 500;
     color: var(--light-text);
     transition: all 0.3s ease;
     position: relative;
-    /* Добавим отступы между вкладками */
     margin: 0 4px;
-    /* Сделаем вкладки как кнопки */
     border-radius: 16px;
     background-color: transparent;
+}
+*/
+
+.bottom-tab {
+    /* Уменьшаем padding для уменьшения высоты вкладки */
+    padding: 10px 0; 
+    /* Уменьшаем размер шрифта */
+    font-size: 0.9rem; 
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    color: var(--light-text);
+    /* Плавные переходы */
+    transition: all 0.3s ease;
+    position: relative;
+    /* Горизонтальные отступы между вкладками */
+    margin: 0 3px; 
+    /* Скругление для каждой вкладки */
+    border-radius: 14px;
+    background-color: transparent;
+    /* Ограничиваем ширину вкладки для предотвращения выхода за края */
+    flex: 1 1 auto;
+    min-width: 0; /* Позволяет тексту сокращаться при необходимости */
+    /* Предотвращаем выделение текста при клике */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .bottom-tab:first-child {
@@ -150,10 +175,10 @@ body {
 .bottom-tab.active {
     color: white;
     background-color: var(--primary-color);
-    /* Убираем стандартную линию подчеркивания */
-    /* box-shadow для объема */
-    box-shadow: 0 4px 8px rgba(0, 136, 204, 0.3);
-    /* Убираем position: relative и ::after, если они были для линии */
+    /* Уменьшаем тень для лучшей производительности и соответствия дизайну */
+    box-shadow: 0 2px 6px rgba(0, 136, 204, 0.3);
+    /* Добавляем transform для подъема вкладки */
+    transform: translateY(-2px);
 }
 
 /*
