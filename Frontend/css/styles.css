@@ -56,6 +56,7 @@ body {
     font-size: 1rem;
 }
 
+/*
 .bottom-tabs {
     position: fixed;
     bottom: 0;
@@ -94,6 +95,80 @@ body {
     border-radius: 3px 3px 0 0;
     animation: tabUnderline 0.3s ease;
 }
+*/
+
+.bottom-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    background-color: white;
+    /* Усиленная тень для большего выделения */
+    box-shadow: 
+        0 -4px 12px rgba(0, 0, 0, 0.15),
+        0 -1px 0 rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+    padding: 12px 0;
+    /* Добавим немного скругления сверху */
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    /* Градиентный фон для большего выделения (опционально) */
+    background: linear-gradient(to top, #ffffff, #f8f9fa); 
+}
+
+.bottom-tab {
+    flex: 1;
+    padding: 14px 0;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--light-text);
+    transition: all 0.3s ease;
+    position: relative;
+    /* Добавим отступы между вкладками */
+    margin: 0 4px;
+    /* Сделаем вкладки как кнопки */
+    border-radius: 16px;
+    background-color: transparent;
+}
+
+.bottom-tab:first-child {
+    margin-left: 12px; /* Отступ от левого края экрана для первой вкладки */
+}
+
+.bottom-tab:last-child {
+    margin-right: 12px; /* Отступ от правого края экрана для последней вкладки */
+}
+
+.bottom-tab:hover {
+    color: var(--primary-color);
+    background-color: rgba(0, 136, 204, 0.05);
+}
+
+/* Стиль для активной вкладки как выделенной кнопки */
+.bottom-tab.active {
+    color: white;
+    background-color: var(--primary-color);
+    /* Убираем стандартную линию подчеркивания */
+    /* box-shadow для объема */
+    box-shadow: 0 4px 8px rgba(0, 136, 204, 0.3);
+    /* Убираем position: relative и ::after, если они были для линии */
+}
+
+/*
+.bottom-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20%;
+    right: 20%;
+    height: 4px; 
+    background-color: var(--primary-color);
+    border-radius: 2px; 
+    animation: tabUnderline 0.3s ease;
+}
+*/
 
 @keyframes tabUnderline {
     from { transform: scaleX(0); }
