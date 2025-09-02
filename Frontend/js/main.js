@@ -296,6 +296,26 @@ async function loadProjects(tabName, append = false) {
     loading = false;
 }
 
+// Функция для обновления позиции и размера индикатора
+function updateTabIndicator() {
+    const activeTab = document.querySelector('.bottom-tab.active');
+    const indicator = document.querySelector('.tab-indicator');
+    
+    if (activeTab && indicator) {
+        // Получаем координаты активной вкладки относительно контейнера
+        const tabRect = activeTab.getBoundingClientRect();
+        const containerRect = activeTab.parentElement.getBoundingClientRect();
+        
+        // Вычисляем смещение слева и ширину
+        const left = tabRect.left - containerRect.left;
+        const width = tabRect.width;
+        
+        // Применяем стили к индикатору
+        indicator.style.left = `${left}px`;
+        indicator.style.width = `${width}px`;
+    }
+}
+
 function resetSearch() {
     searchInput.value = '';
     loadProjects(getActiveTab(), false);
@@ -335,6 +355,10 @@ function switchTab(tabName) {
     newContent.classList.add('active');
     page = 0;
     hasMore = true;
+    
+    // Добавляем вызов обновления индикатора
+    updateTabIndicator();
+    
     loadProjects(tabName);
 }
 
@@ -397,8 +421,73 @@ window.addEventListener('scroll', () => {
 
 toTopBtn.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
 
+// В конце файла, где у вас DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     loadProjects('channels');
     tg.platform !== 'unknown' && tg.BackButton.show();
     tg.platform !== 'unknown' && tg.BackButton.onClick(() => tg.close());
+    
+    // Инициализируем позицию индикатора
+    updateTabIndicator();
 });
+
+// Добавляем обработчик изменения размера окна
+window.addEventListener('resize', updateTabIndicator);
+
+// Обновляем обработчики кликов на вкладках
+bottomTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        // Сначала убираем класс active у всех вкладок
+        bottomTabs.forEach(t => t.classList.remove('active'));
+        // Добавляем класс active только кликнутой вкладке
+        tab.classList.add('active');
+        // Переключаем контент
+        switchTab(tab.dataset.tab);
+    });
+});
+
+// === Swipe Navigation для переключения вкладок ===
+let touchStartX = 0;
+let touchEndX = 0;
+const swipeThreshold = 50; // Минимальная дистанция свайпа в пикселях
+
+// Обработчик начала касания
+document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+// Обработчик окончания касания
+document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipeGesture();
+}, { passive: true });
+
+// Функция обработки свайп-жеста
+function handleSwipeGesture() {
+    const swipeDistance = touchStartX - touchEndX;
+    
+    // Определяем направление свайпа
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+        const activeTab = document.querySelector('.bottom-tab.active');
+        const allTabs = Array.from(document.querySelectorAll('.bottom-tab'));
+        const currentIndex = allTabs.indexOf(activeTab);
+        
+        let targetIndex;
+        
+        if (swipeDistance > 0) {
+            // Свайп влево -> следующая вкладка
+            targetIndex = (currentIndex + 1) % allTabs.length;
+        } else {
+            // Свайп вправо -> предыдущая вкладка
+            targetIndex = (currentIndex - 1 + allTabs.length) % allTabs.length;
+        }
+        
+        // Получаем имя целевой вкладки и переключаемся
+        const targetTabName = allTabs[targetIndex].dataset.tab;
+        switchTab(targetTabName);
+        
+        // Обновляем активный класс на вкладках
+        allTabs.forEach(tab => tab.classList.remove('active'));
+        allTabs[targetIndex].classList.add('active');
+    }
+}
