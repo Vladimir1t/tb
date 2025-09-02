@@ -24,11 +24,17 @@ async function loadProjects(tabName, append = false) {
     const apiType = typeMap[tabName];
     const tabContent = document.getElementById(`${tabName}-tab`);
 
+    // if (!append) {
+    //    tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
+    //    page = 0;
+    //    hasMore = true;
+    // }
+
     if (!append) {
-        tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
-        page = 0;
-        hasMore = true;
-    }
+    showLoadingIndicator(tabContent, tabName);
+    page = 0;
+    hasMore = true;
+}
 
     const query = searchInput.value.trim(); // текст поиска
     const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр в нижнем регистре
@@ -294,6 +300,22 @@ async function loadProjects(tabName, append = false) {
     }
 
     loading = false;
+}
+
+// Функция для отображения динамической надписи загрузки
+function showLoadingIndicator(tabContent, tabName) {
+    // Объект с надписями для разных типов контента
+    const loadingTexts = {
+        'channels': 'Идет поиск каналов...',
+        'bots': 'Идет поиск ботов...',
+        'apps': 'Идет поиск приложений...'
+    };
+    
+    // Получаем надпись в зависимости от имени вкладки
+    const text = loadingTexts[tabName] || 'Идет поиск...';
+    
+    // Отображаем надпись в контейнере вкладки
+    tabContent.innerHTML = `<div class="loading">${text}</div>`;
 }
 
 // Функция для обновления позиции и размера индикатора
