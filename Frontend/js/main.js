@@ -435,6 +435,20 @@ searchInput.addEventListener('input', function() {
     }, 300);
 });
 
+// === НОВЫЙ ОБРАБОТЧИК: Скрытие клавиатуры при нажатии Enter ===
+searchInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        // Предотвращаем стандартное поведение (например, добавление новой строки)
+        event.preventDefault();
+        
+        // Принудительно убираем фокус с поля ввода
+        searchInput.blur();
+        
+        // Применяем фильтры и запускаем поиск
+        applyFiltersAndSearch();
+    }
+});
+
 window.onscroll = function() {
     toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
 };
