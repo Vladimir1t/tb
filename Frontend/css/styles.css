@@ -56,47 +56,6 @@ body {
     font-size: 1rem;
 }
 
-/*
-.bottom-tabs {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    background-color: white;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    z-index: 1000;
-    padding: 10px 0;
-}
-
-.bottom-tab {
-    flex: 1;
-    padding: 12px 0;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 500;
-    color: var(--light-text);
-    transition: var(--transition);
-    position: relative;
-}
-
-.bottom-tab.active {
-    color: var(--primary-color);
-}
-
-.bottom-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 20%;
-    right: 20%;
-    height: 3px;
-    background-color: var(--primary-color);
-    border-radius: 3px 3px 0 0;
-    animation: tabUnderline 0.3s ease;
-}
-*/
-
 .bottom-tabs {
     position: fixed;
     /* Поднимаем панель выше от низа экрана */
@@ -125,30 +84,28 @@ body {
 }
 
 .bottom-tab {
-    /* Равная ширина для всех вкладок */
-    flex: 1; 
-    /* Фиксированная высота вкладки */
-    height: 44px; 
-    /* Центрирование содержимого (текста и иконок) */
+    flex: 1;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Стили текста */
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    color: var(--light-text);
-    /* Скругление каждой вкладки */
+    /* Используем переменные CSS для цветов, чтобы их можно было анимировать */
+    --tab-color: var(--light-text);
+    --tab-bg-color: transparent;
+    color: var(--tab-color);
+    background-color: var(--tab-bg-color);
     border-radius: 14px;
-    background-color: transparent;
-    /* Плавные переходы */
-    transition: all 0.3s ease;
-    /* Отступы между вкладками */
+    /* Анимируем цвета */
+    transition: 
+        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s ease;
     margin: 0 4px;
-    /* Предотвращаем выделение текста */
     user-select: none;
     -webkit-user-select: none;
-    /* Обрезаем текст, если он слишком длинный */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -163,32 +120,17 @@ body {
 }
 
 .bottom-tab:hover {
-    color: var(--primary-color);
-    background-color: rgba(0, 136, 204, 0.05);
+    /* Меняем переменные при наведении */
+    --tab-color: var(--primary-color);
+    --tab-bg-color: rgba(0, 136, 204, 0.05);
 }
 
-/* Стиль для активной вкладки */
+/* Активная вкладка использует те же переменные */
 .bottom-tab.active {
-    color: white;
-    background-color: var(--primary-color);
+    --tab-color: white;
+    --tab-bg-color: var(--primary-color);
     box-shadow: 0 2px 6px rgba(0, 136, 204, 0.3);
-    /* Эффект "подъема" активной вкладки */
-    transform: translateY(-2px);
 }
-
-/*
-.bottom-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 20%;
-    right: 20%;
-    height: 4px; 
-    background-color: var(--primary-color);
-    border-radius: 2px; 
-    animation: tabUnderline 0.3s ease;
-}
-*/
 
 @keyframes tabUnderline {
     from { transform: scaleX(0); }
