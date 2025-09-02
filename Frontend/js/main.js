@@ -73,46 +73,55 @@ async function loadProjects(tabName, append = false) {
                         const iconUrl = project.icon || 'https://via.placeholder.com/48';
                         defaultHtml += `
                             <div class="card" data-theme="${project.theme.toLowerCase()}">
-                                <div class="channel-icon-container">
-                                    ${project.icon ? 
-                                        `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-                                        ''
-                                    }
-                                    <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
-                                        ${project.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div class="channel-info">
-                                        <h3>${project.name}</h3>
-                                        <p>Тематика: ${project.theme}</p>
-                                    </div>
-                                </div>
-                                        <div class="actions">
-                                            <a href="${project.link}" class="btn">Перейти</a>
-                                            <button class="like-btn" data-project-id="${projectId}">
-                                                <svg class="like-icon" viewBox="0 0 24 24">
-                                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                                </svg>
-                                            </button>
+                                <div class="card-content">
+                                    <a href="${project.link}" class="channel-clickable-area" target="_blank" rel="noopener noreferrer">
+                                        ${project.icon ? 
+                                            `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                                            ''
+                                        }
+                                        <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
+                                            ${project.name.charAt(0).toUpperCase()}
                                         </div>
-                                <div class="subscribers-mini">
-                                    <span class="subscribers-badge">
-                                        ${project.subscribers.toLocaleString()} подписчиков
-                                    </span>
-                                     <span class="likes-badge">
-                                        <svg class="likes-icon-inline" viewBox="0 0 24 24">
-                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                        </svg>
-                                        <span class="likes-count">${project.likes || 0}</span>
-                                    </span>
+                                        <div class="channel-info">
+                                            <h3>${project.name}</h3>
+                                            <p>Тематика: ${project.theme}</p>
+                                        </div>
+                                    </a>
+                                    <div class="subscribers-mini">
+                                        <span class="subscribers-badge">
+                                            ${project.subscribers.toLocaleString()} подписчиков
+                                        </span>
+                                        <span class="likes-badge">
+                                            <svg class="likes-icon-inline" viewBox="0 0 24 24">
+                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                            </svg>
+                                            <span class="likes-count">${project.likes || 0}</span>
+                                        </span>
+                                    </div>
+                                    <div class="actions">
+                                        <button class="like-btn" data-project-id="${projectId}" aria-label="Поставить лайк">
+                                            <svg class="like-icon" viewBox="0 0 24 24">
+                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         `;
                     });
                     tabContent.innerHTML = defaultHtml;
-                    // Обработчик для кнопки лайка
+                    // Обработчик для кнопки лайка с анимацией
                     tabContent.querySelectorAll('.like-btn').forEach(btn => {
                         btn.onclick = (event) => {
-                            event.stopPropagation(); // Предотвращаем двойной клик
+                            event.stopPropagation();
+                            
+                            // Добавляем класс анимации
+                            btn.classList.add('clicked');
+                            // Убираем класс через 400 мс (длительность анимации)
+                            setTimeout(() => {
+                                btn.classList.remove('clicked');
+                            }, 400);
+                            
                             handleLike(btn.dataset.projectId, btn);
                         };
                     });
@@ -155,37 +164,38 @@ async function loadProjects(tabName, append = false) {
             const iconUrl = project.icon || 'https://via.placeholder.com/48';
             html += `
                 <div class="card" data-theme="${project.theme.toLowerCase()}">
-                    <div class="channel-icon-container">
-                        ${project.icon ? 
-                            `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-                            ''
-                        }
-                        <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
-                            ${project.name.charAt(0).toUpperCase()}
+                    <div class="card-content">
+                        <a href="${project.link}" class="channel-clickable-area" target="_blank" rel="noopener noreferrer">
+                            ${project.icon ? 
+                                `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                                ''
+                            }
+                            <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
+                                ${project.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="channel-info">
+                                <h3>${project.name}</h3>
+                                <p>Тематика: ${project.theme}</p>
+                            </div>
+                        </a>
+                        <div class="subscribers-mini">
+                            <span class="subscribers-badge">
+                                ${project.subscribers.toLocaleString()} подписчиков
+                            </span>
+                            <span class="likes-badge">
+                                <svg class="likes-icon-inline" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <span class="likes-count">${project.likes || 0}</span>
+                            </span>
                         </div>
-                        <div class="channel-info">
-                            <h3>${project.name}</h3>
-                            <p>Тематика: ${project.theme}</p>
+                        <div class="actions">
+                            <button class="like-btn" data-project-id="${projectId}" aria-label="Поставить лайк">
+                                <svg class="like-icon" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                            </button>
                         </div>
-                    </div>
-                    <div class="actions">
-                        <a href="${project.link}" class="btn">Перейти</a>
-                        <button class="like-btn" data-project-id="${projectId}">
-                            <svg class="like-icon" viewBox="0 0 24 24">
-                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="subscribers-mini">
-                        <span class="subscribers-badge">
-                            ${project.subscribers.toLocaleString()} подписчиков
-                        </span>
-                         <span class="likes-badge">
-                             <svg class="likes-icon-inline" viewBox="0 0 24 24">
-                                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                             </svg>
-                             <span class="likes-count">${project.likes || 0}</span>
-                         </span>
                     </div>
                 </div>
             `;
@@ -196,10 +206,18 @@ async function loadProjects(tabName, append = false) {
             return;
         }
 
-        // Обработчик для кнопки лайка
+        // Обработчик для кнопки лайка с анимацией
         tabContent.querySelectorAll('.like-btn').forEach(btn => {
             btn.onclick = (event) => {
-                event.stopPropagation(); // Предотвращаем двойной клик
+                event.stopPropagation();
+                
+                // Добавляем класс анимации
+                btn.classList.add('clicked');
+                // Убираем класс через 400 мс (длительность анимации)
+                setTimeout(() => {
+                    btn.classList.remove('clicked');
+                }, 400);
+                
                 handleLike(btn.dataset.projectId, btn);
             };
         });
@@ -231,10 +249,18 @@ async function loadProjects(tabName, append = false) {
         }
         const loadingElements = tabContent.querySelectorAll('.loading');
         loadingElements.forEach(el => el.remove());
-        // Обработчик для кнопки лайка
+        // Обработчик для кнопки лайка с анимацией
         tabContent.querySelectorAll('.like-btn').forEach(btn => {
             btn.onclick = (event) => {
-                event.stopPropagation(); // Предотвращаем двойной клик
+                event.stopPropagation();
+                
+                // Добавляем класс анимации
+                btn.classList.add('clicked');
+                // Убираем класс через 400 мс (длительность анимации)
+                setTimeout(() => {
+                    btn.classList.remove('clicked');
+                }, 400);
+                
                 handleLike(btn.dataset.projectId, btn);
             };
         });
