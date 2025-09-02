@@ -469,38 +469,51 @@ body {
     100% { transform: scale(1); }
 }
 
-/*
-.subscribers-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: #e8f4fd;
-    color: #1976d2;
-    border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 500;
-    border: 1px solid #bbdefb;
-}
-.likes-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: #ffebee; 
-    color: #c62828; 
-    border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 500;
-    border: 1px solid #ffcdd2; 
-    margin-left: 8px; /
-} */
-
-
 .likes-icon-inline {
     width: 16px;
     height: 16px;
     fill: #c62828; /* Темно-красный цвет */
     vertical-align: middle;
     margin-right: 4px; /* Отступ справа от иконки до числа */
+}
+
+/* Стиль для контейнера иконки/буквы */
+.channel-icon-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Стиль для изображения-иконки */
+.channel-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+    border: 2px solid #e5e7eb;
+    /* Скрываем, если нет src */
+    display: none;
+}
+
+/* Показываем иконку, только если у нее есть src */
+.channel-icon[src]:not([src=""]) {
+    display: block;
+}
+
+/* Новый стиль для элемента с буквой */
+.channel-letter-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    border: 2px solid #e5e7eb;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    background-color: var(--primary-color); /* Используем основной цвет из :root */
+    flex-shrink: 0; /* Не сжимается */
 }

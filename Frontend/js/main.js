@@ -74,7 +74,13 @@ async function loadProjects(tabName, append = false) {
                         defaultHtml += `
                             <div class="card" data-theme="${project.theme.toLowerCase()}">
                                 <div class="channel-icon-container">
-                                    <img src="${iconUrl}" class="channel-icon">
+                                    ${project.icon ? 
+                                        `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                                        ''
+                                    }
+                                    <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
+                                        ${project.name.charAt(0).toUpperCase()}
+                                    </div>
                                     <div class="channel-info">
                                         <h3>${project.name}</h3>
                                         <p>Тематика: ${project.theme}</p>
@@ -150,7 +156,13 @@ async function loadProjects(tabName, append = false) {
             html += `
                 <div class="card" data-theme="${project.theme.toLowerCase()}">
                     <div class="channel-icon-container">
-                        <img src="${iconUrl}" class="channel-icon">
+                        ${project.icon ? 
+                            `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                            ''
+                        }
+                        <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
+                            ${project.name.charAt(0).toUpperCase()}
+                        </div>
                         <div class="channel-info">
                             <h3>${project.name}</h3>
                             <p>Тематика: ${project.theme}</p>
