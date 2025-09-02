@@ -517,3 +517,30 @@ body {
     background-color: var(--primary-color); /* Используем основной цвет из :root */
     flex-shrink: 0; /* Не сжимается */
 }
+
+/* Стиль для кликабельной области (аватарка + название) */
+.channel-clickable-area {
+    display: flex;
+    align-items: center;
+    text-decoration: none; /* Убираем подчеркивание */
+    color: inherit; /* Наследуем цвет текста */
+    cursor: pointer; /* Показываем курсор как у ссылки */
+    margin-bottom: 15px; /* Отступ снизу */
+    border-radius: 12px; /* Скругление углов */
+    padding: 10px; /* Внутренний отступ */
+    transition: background-color 0.2s ease; /* Плавный переход фона */
+}
+
+.channel-clickable-area:hover {
+    background-color: rgba(0, 0, 0, 0.05); /* Легкий фон при наведении */
+}
+
+/* Стили для текста внутри кликабельной области */
+.channel-info h3 {
+    margin-bottom: 0; /* Убираем нижний отступ у заголовка */
+    transition: color 0.2s ease; /* Плавный переход цвета */
+}
+
+.channel-clickable-area:hover .channel-info h3 {
+    color: var(--primary-color); /* Цвет заголовка при наведении */
+}

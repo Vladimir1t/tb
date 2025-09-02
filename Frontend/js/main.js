@@ -73,7 +73,7 @@ async function loadProjects(tabName, append = false) {
                         const iconUrl = project.icon || 'https://via.placeholder.com/48';
                         defaultHtml += `
                             <div class="card" data-theme="${project.theme.toLowerCase()}">
-                                <div class="channel-icon-container">
+                                <a href="${project.link}" class="channel-clickable-area" target="_blank" rel="noopener noreferrer">
                                     ${project.icon ? 
                                         `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                                         ''
@@ -85,15 +85,15 @@ async function loadProjects(tabName, append = false) {
                                         <h3>${project.name}</h3>
                                         <p>Тематика: ${project.theme}</p>
                                     </div>
+                                </a>
+                                <div class="actions">
+                                    <!-- Кнопка "Перейти" удалена -->
+                                    <button class="like-btn" data-project-id="${projectId}">
+                                        <svg class="like-icon" viewBox="0 0 24 24">
+                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                        <div class="actions">
-                                            <a href="${project.link}" class="btn">Перейти</a>
-                                            <button class="like-btn" data-project-id="${projectId}">
-                                                <svg class="like-icon" viewBox="0 0 24 24">
-                                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                                </svg>
-                                            </button>
-                                        </div>
                                 <div class="subscribers-mini">
                                     <span class="subscribers-badge">
                                         ${project.subscribers.toLocaleString()} подписчиков
@@ -155,7 +155,7 @@ async function loadProjects(tabName, append = false) {
             const iconUrl = project.icon || 'https://via.placeholder.com/48';
             html += `
                 <div class="card" data-theme="${project.theme.toLowerCase()}">
-                    <div class="channel-icon-container">
+                    <a href="${project.link}" class="channel-clickable-area" target="_blank" rel="noopener noreferrer">
                         ${project.icon ? 
                             `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                             ''
@@ -167,9 +167,9 @@ async function loadProjects(tabName, append = false) {
                             <h3>${project.name}</h3>
                             <p>Тематика: ${project.theme}</p>
                         </div>
-                    </div>
+                    </a>
                     <div class="actions">
-                        <a href="${project.link}" class="btn">Перейти</a>
+                        <!-- Кнопка "Перейти" удалена -->
                         <button class="like-btn" data-project-id="${projectId}">
                             <svg class="like-icon" viewBox="0 0 24 24">
                                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
