@@ -95,7 +95,7 @@ body {
     border-radius: 3px 3px 0 0;
     animation: tabUnderline 0.3s ease;
 }
-*/
+
 
 .bottom-tabs {
     position: fixed;
@@ -104,20 +104,16 @@ body {
     right: 0;
     display: flex;
     background-color: white;
-    /* Усиленная тень для большего выделения */
     box-shadow: 
         0 -4px 12px rgba(0, 0, 0, 0.15),
         0 -1px 0 rgba(0, 0, 0, 0.05);
     z-index: 1000;
     padding: 12px 0;
-    /* Добавим немного скругления сверху */
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
-    /* Градиентный фон для большего выделения (опционально) */
     background: linear-gradient(to top, #ffffff, #f8f9fa); 
 }
 
-/*
 .bottom-tab {
     flex: 1;
     padding: 12px 0;
@@ -156,6 +152,35 @@ body {
     /* Предотвращаем выделение текста при клике */
     user-select: none;
     -webkit-user-select: none;
+}
+
+.bottom-tabs {
+    position: fixed;
+    /* Используем bottom и left/right для позиционирования */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Используем display: flex для гибкого расположения */
+    display: flex;
+    /* Цвет фона */
+    background-color: white;
+    /* Тень для отделения от контента */
+    box-shadow: 
+        0 -2px 8px rgba(0, 0, 0, 0.12),
+        0 -1px 0 rgba(0, 0, 0, 0.03);
+    /* Высокий z-index для наложения поверх других элементов */
+    z-index: 1000;
+    /* Убираем padding, так как отступы теперь у самих вкладок */
+    padding: 8px 0; 
+    /* Скругление верхних углов всей панели */
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    /* Добавляем box-sizing для корректного расчета ширины */
+    box-sizing: border-box;
+    /* Ограничиваем максимальную ширину для предотвращения выхода за край */
+    max-width: 100%;
+    /* Центрируем содержимое */
+    justify-content: center;
 }
 
 .bottom-tab:first-child {
