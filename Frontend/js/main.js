@@ -322,7 +322,8 @@ function resetSearch() {
 }
 
 function resetFilter() {
-    currentFilter = 'все';
+    resetFilterToDefault();
+    const activeTab = getActiveTab();
     loadProjects(getActiveTab(), false);
 }
 
@@ -355,11 +356,41 @@ function switchTab(tabName) {
     newContent.classList.add('active');
     page = 0;
     hasMore = true;
+
+    // === Добавлено: Сброс фильтра ===
+    resetFilterToDefault();
     
     // Добавляем вызов обновления индикатора
     updateTabIndicator();
     
     loadProjects(tabName);
+}
+
+// Функция для сброса фильтра на "Все категории"
+function resetFilterToDefault() {
+    // Сбрасываем переменную currentFilter
+    currentFilter = 'все';
+    
+    // Обновляем текст кнопки фильтра
+    if (filterBtn) {
+        filterBtn.textContent = 'Фильтр ▼';
+    }
+    
+    // Сбрасываем активный класс у опций фильтра
+    if (filterOptions) {
+        filterOptions.forEach(option => {
+            if (option.dataset.theme === 'все') {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
+    }
+    
+    // Скрываем dropdown, если он открыт
+    if (filterDropdown) {
+        filterDropdown.classList.remove('show');
+    }
 }
 
 function applyFiltersAndSearch() {
