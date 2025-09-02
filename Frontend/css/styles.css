@@ -276,10 +276,12 @@ body {
     border-radius: 6px; /* Немного больше скругление */
 }
 
+/*
 .like-btn:hover {
     background-color: rgba(0, 0, 0, 0.05);
     transform: scale(1.1);
 }
+*/
 
 /* Увеличенная иконка лайка */
 .like-icon {
