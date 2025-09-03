@@ -115,7 +115,7 @@ def get_telegram_data_sync(username: str) -> Tuple[Optional[bytes], Optional[str
         with _request_lock:
             current_time = time.time()
             if _last_request_time > 0:
-                time_to_wait = max(0, 7 - (current_time - _last_request_time))
+                time_to_wait = max(0, 4 - (current_time - _last_request_time))
                 if time_to_wait > 0:
                     print(f"⏸️  Ожидание {time_to_wait:.1f} сек перед запросом {username}")
                     await asyncio.sleep(time_to_wait)
@@ -172,6 +172,12 @@ def add_new_chanels(db_path: str = DB_NAME):
     for i, item in enumerate(data, 1):
         username = item[1]
         print(f"\n📊 Обрабатываем канал {i}/{len(data)}: {username}")
+
+        cursor.execute("SELECT 1 FROM projects WHERE link = ?", (f"https://t.me/{username}",))
+        if cursor.fetchone():
+            print(f"⚠️  Канал {username} уже есть в базе, пропускаем")
+            skipped += 1
+            continue
         
         result = get_telegram_data_sync(username)
         
@@ -212,7 +218,7 @@ def add_new_chanels(db_path: str = DB_NAME):
         print(f"📈 Успешно: {successful}, Пропущено: {skipped}")
         
         if i < len(data):
-            delay = random.uniform(1, 3)
+            delay = random.uniform(1, 2)
             print(f"⏸️  Длинная пауза {delay:.1f} сек перед следующим каналом")
             time.sleep(delay)
 
