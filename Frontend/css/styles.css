@@ -58,41 +58,79 @@ body {
 
 .bottom-tabs {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    /* Фиксируем внизу экрана без смещений */
+    bottom: 16px;
+    left: 16px;  /* Отступ от левого края */
+    right: 16px; /* Отступ от правого края */
+    /* Убираем transform и left: 50% */
+    /* width: calc(100% - 32px); */
+    max-width: 500px;
+    /* Центрируем блок с максимальной шириной */
+    margin: 0 auto;
+    
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     background-color: white;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(0, 0, 0, 0.03);
+    border-radius: 20px;
+    padding: 8px;
+    box-sizing: border-box;
     z-index: 1000;
-    padding: 10px 0;
 }
 
+/* Стиль индикатора остается без изменений */
+.tab-indicator {
+    position: absolute;
+    left: 0;
+    bottom: 8px;
+    height: 44px;
+    width: 0;
+    background-color: var(--primary-color);
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0, 136, 204, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+/* Стиль вкладок остается без изменений */
 .bottom-tab {
     flex: 1;
-    padding: 12px 0;
-    text-align: center;
-    cursor: pointer;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.0rem;
     font-weight: 500;
+    cursor: pointer;
     color: var(--light-text);
-    transition: var(--transition);
+    border-radius: 14px;
+    background-color: transparent;
+    transition: color 0.2s ease;
+    margin: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    /* white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 1;
     position: relative;
+    padding: 0 8px; */
+    white-space: normal; 
+    text-align: center; /* Центрируем текст */
+    z-index: 1;
+    position: relative;
+    padding: 4px 8px; /* Немного увеличен вертикальный padding */
 }
 
-.bottom-tab.active {
+.bottom-tab:hover {
     color: var(--primary-color);
 }
 
-.bottom-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 20%;
-    right: 20%;
-    height: 3px;
-    background-color: var(--primary-color);
-    border-radius: 3px 3px 0 0;
-    animation: tabUnderline 0.3s ease;
+.bottom-tab.active {
+    color: white; 
+    background-color: transparent;
+    box-shadow: none;
 }
 
 @keyframes tabUnderline {
@@ -123,6 +161,15 @@ body {
     transition: var(--transition);
     position: relative;
     overflow: hidden;
+}
+
+/* Стиль для основного контента карточки (информация + плашки) */
+.card-content {
+    display: flex;
+    flex-direction: column;
+    /* Убедимся, что контент не перекрывается кнопкой лайка */
+    padding-right: 50px; /* Примерный размер кнопки лайка + отступ */
+    position: relative; /* Для позиционирования относительно этого блока */
 }
 
 .card:hover {
@@ -179,10 +226,18 @@ body {
 }
 
 /* === СТИЛИ ДЛЯ КНОПОК ДЕЙСТВИЙ === */
+/* Обновленный стиль для области действий (только кнопка лайка) */
 .actions {
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
+    justify-content: flex-end;
+    /* Позиционируем абсолютно относительно .card-content */
+    position: absolute;
+    top: 10px; /* Отступ сверху, совпадает с padding кликабельной области */
+    right: 0;
+    margin: 0;
+    height: auto;
+    width: auto;
+    z-index: 1; /* Убедимся, что кнопка поверх */
 }
 
 .btn {
@@ -205,43 +260,51 @@ body {
     transform: translateY(-2px);
 }
 
-/* кнопка лайка */
+/* Стиль для увеличенной кнопки лайка */
 .like-btn {
-    background: var(--like-button-bg);
-    border: 1px solid var(--like-button-border);
-    border-radius: 8px;
-    width: 40px;
-    height: 40px;
+    background: transparent;
+    border: none;
+    width: auto;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: var(--transition);
-    flex-shrink: 0; /* Кнопка не сжимается */
+    flex-shrink: 0;
+    padding: 12px; /* Увеличенный отступ вокруг иконки */
+    border-radius: 6px; /* Немного больше скругление */
 }
 
+/*
 .like-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
 }
+*/
 
+/* Увеличенная иконка лайка */
 .like-icon {
-    width: 20px;
-    height: 20px;
+    width: 28px; /* Увеличена с 20px до 28px */
+    height: 28px; /* Увеличена с 20px до 28px */
     fill: var(--like-icon-default);
-    transition: fill 0.3s ease, transform 0.2s ease;
+    transition: fill 0.3s ease;
 }
 
 .like-btn.liked .like-icon {
     fill: var(--like-icon-liked);
-    animation: pulse 0.4s ease;
+}
+
+/* Анимация при клике */
+.like-btn.clicked .like-icon {
+    animation: pulse 0.3s ease;
 }
 
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
-} 
+}
 
 .likes {
     display: flex;
@@ -414,12 +477,14 @@ body {
     font-style: italic;
 }
 
+/* Стили для плашек подписчиков и лайков */
 .subscribers-mini {
     display: flex;
     justify-content: flex-start;
-    align-items: center; /* Центрирование по вертикали */
-    gap: 10px; /* Отступ между плашками */
-    margin-top: 10px;
+    align-items: center;
+    gap: 10px;
+    margin-top: 0; /* Убираем верхний отступ, так как он теперь после кликабельной области */
+    padding: 0 10px 10px 10px; /* Внутренние отступы, особенно снизу */
 }
 
 .subscribers-badge,
@@ -433,34 +498,31 @@ body {
     font-weight: 500;
     border: 1px solid;
     text-align: center;
-    min-height: 32px; /* Общая минимальная высота */
+    min-height: 32px;
 }
 
-/* Плашка подписчиков */
 .subscribers-badge {
     background: #e8f4fd;
     color: #1976d2;
     border-color: #bbdefb;
 }
 
-/* Плашка лайков */
 .likes-badge {
     background: #ffebee;
     color: #c62828;
     border-color: #ffcdd2;
-    transition: all 0.3s ease;
-    cursor: pointer; /* Показываем курсор мыши как указатель */
+    cursor: pointer;
 }
 
 .likes-badge:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(255, 97, 97, 0.2);
 }
 
 .likes-badge.clicked {
     transform: scale(1.1);
     box-shadow: 0 8px 16px rgba(255, 97, 97, 0.3);
-    animation: pulse 0.4s ease;
+    animation: pulse 0.3s ease-out;
 }
 
 @keyframes pulse {
@@ -469,38 +531,80 @@ body {
     100% { transform: scale(1); }
 }
 
-/*
-.subscribers-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: #e8f4fd;
-    color: #1976d2;
-    border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 500;
-    border: 1px solid #bbdefb;
-}
-.likes-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: #ffebee; 
-    color: #c62828; 
-    border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 500;
-    border: 1px solid #ffcdd2; 
-    margin-left: 8px; /
-} */
-
-
+/* Иконка лайка рядом с числом */
 .likes-icon-inline {
     width: 16px;
     height: 16px;
-    fill: #c62828; /* Темно-красный цвет */
+    fill: #c62828;
     vertical-align: middle;
-    margin-right: 4px; /* Отступ справа от иконки до числа */
+    margin-right: 4px;
+}
+
+/* Стиль для контейнера иконки/буквы */
+.channel-icon-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Стиль для изображения-иконки */
+.channel-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+    border: 2px solid #e5e7eb;
+    /* Скрываем, если нет src */
+    display: none;
+}
+
+/* Показываем иконку, только если у нее есть src */
+.channel-icon[src]:not([src=""]) {
+    display: block;
+}
+
+/* Новый стиль для элемента с буквой */
+.channel-letter-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    border: 2px solid #e5e7eb;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    background-color: var(--primary-color); /* Используем основной цвет из :root */
+    flex-shrink: 0; /* Не сжимается */
+}
+
+/* Стиль для кликабельной области */
+.channel-clickable-area {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 10px;
+    transition: background-color 0.2s ease;
+    /* Убираем нижний margin, так как плашки теперь ниже */
+    margin-bottom: 10px;
+}
+
+.channel-clickable-area:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Стили для текста внутри кликабельной области */
+.channel-info h3 {
+    margin-bottom: 0;
+    transition: color 0.2s ease;
+}
+
+.channel-clickable-area:hover .channel-info h3 {
+    color: var(--primary-color);
 }
