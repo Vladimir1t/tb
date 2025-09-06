@@ -34,11 +34,10 @@ app = FastAPI(lifespan=lifespan)
 # Middleware для CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[*],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
 # Подключение роутеров
