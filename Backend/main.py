@@ -34,17 +34,10 @@ app = FastAPI(lifespan=lifespan)
 # Middleware для CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://telegram-5qca12xds-vlads-projects-484d0957.vercel.app",
-        "https://web.telegram.org",
-        "http://localhost:8000",
-        "http://localhost:3000",
-        "https://localhost:3000"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
 # Подключение роутеров
