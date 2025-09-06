@@ -5,6 +5,7 @@ import uvicorn
 import threading
 import logging
 from contextlib import asynccontextmanager
+from scripts import database
 
 from routers import projects, users, debug
 from bot import run_bot
@@ -21,8 +22,9 @@ async def lifespan(app: FastAPI):
     logger.info("Starting bot in a background thread...")
     # bot_thread = threading.Thread(target=run_bot, daemon=True)
     # bot_thread.start()
+    database.shuffle_database('aggregator.db')
     
-    yield # Приложение готово к приему запросов
+    yield 
     
     logger.info("Application is shutting down.")
 

@@ -11,17 +11,72 @@ import random
 import os
 from datetime import datetime, timedelta
 
-from database_data import data
+from scripts import database_data
 
 API_ID = 23018155
 API_HASH = '59054196d2bcd74bbd30b4415f66bfd2'
 SESSION_NAME = 'session_1'
-BOT_TOKEN = ""
+BOT_TOKEN = "7864050009:AAEvftlbWNqYPFYt-F8_fHxdAa1YNn_aego"
 DB_NAME = 'Backend/aggregator.db'
 
 _request_lock = threading.Lock()
 _last_request_time = 0
 _flood_wait_times = {}
+
+
+_flood_wait_times = {}
+
+def shuffle_database(db_path: str = DB_NAME):
+    """Случайным образом перемешивает все записи в таблице projects"""
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Получаем все записи из таблицы projects
+        cursor.execute("SELECT * FROM projects")
+        rows = cursor.fetchall()
+        
+        # Получаем названия колонок
+        cursor.execute("PRAGMA table_info(projects)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        # Перемешиваем записи
+        random.shuffle(rows)
+        
+        # Очищаем таблицу
+        cursor.execute("DELETE FROM projects")
+        
+        # Вставляем перемешанные записи
+        for row in rows:
+            # Создаем словарь для удобной вставки
+            row_dict = dict(zip(columns, row))
+            
+            cursor.execute('''
+                INSERT INTO projects 
+                (type, name, link, theme, is_premium, likes, subscribers, user_id, icon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                row_dict['type'],
+                row_dict['name'],
+                row_dict['link'],
+                row_dict['theme'],
+                row_dict['is_premium'],
+                row_dict['likes'],
+                row_dict['subscribers'],
+                row_dict['user_id'],
+                row_dict['icon']
+            ))
+        
+        conn.commit()
+        print(f"✅ База данных перемешана! Перемешанно {len(rows)} записей")
+        
+    except Exception as e:
+        print(f"❌ Ошибка при перемешивании БД: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 def _run_in_thread(coro):
     """Запускает корутину в отдельном потоке с новым event loop"""
@@ -340,5 +395,5 @@ def init_db(db_path: str = DB_NAME):
         print("🏁 Инициализация завершена")
 
 if __name__ == "__main__":
-    # init_db()
-    add_new_chanels()
+    # add_new_chanels()
+    shuffle_database()
