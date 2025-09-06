@@ -20,21 +20,37 @@ async def get_projects(
     conn = None
     try:
         conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        
+        # Создаем функцию для регистронезависимого LIKE
+        def ilike(pattern, value):
+            if pattern is None or value is None:
+                return False
+            # Заменяем SQL wildcards на regex wildcards
+            pattern_regex = pattern.replace('%', '.*').replace('_', '.')
+            import re
+            return bool(re.match(f"^{pattern_regex}$", value, re.IGNORECASE))
+        
+        conn.create_function("ilike", 2, ilike)
         cursor = conn.cursor()
+        
         query = "SELECT * FROM projects WHERE 1=1"
         params = []
 
         if type:
             type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
-            query += " AND LOWER(type) = ?"
-            params.append(type_mapping.get(type.lower(), type.lower()))
+            normalized_type = type_mapping.get(type.lower(), type.lower())
+            query += " AND ilike(?, type)"
+            params.append(normalized_type)
+        
         if theme:
-            query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
-            like_pattern = f"%{theme.lower()}%"
+            query += " AND (ilike(?, name) OR ilike(?, theme))"
+            like_pattern = f"%{theme}%"
             params.extend([like_pattern, like_pattern])
+        
         if search:
-            query += " AND (LOWER(name) LIKE ? OR LOWER(theme) LIKE ?)"
-            like_pattern = f"%{search.lower()}%"
+            query += " AND (ilike(?, name) OR ilike(?, theme))"
+            like_pattern = f"%{search}%"
             params.extend([like_pattern, like_pattern])
 
         query += " ORDER BY is_premium DESC, likes DESC LIMIT ? OFFSET ?"
@@ -51,7 +67,9 @@ async def get_projects(
             else:
                 project_data["icon"] = None
             projects.append(project_data)
+        
         return projects
+        
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
     finally:

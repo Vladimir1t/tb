@@ -13,20 +13,18 @@ from bot import run_bot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Управляет запуском и остановкой фоновых задач (например, бота).
     """
     logger.info("Starting bot in a background thread...")
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
+    # bot_thread = threading.Thread(target=run_bot, daemon=True)
+    # bot_thread.start()
     
     yield # Приложение готово к приему запросов
     
     logger.info("Application is shutting down.")
-
 
 # Создаем приложение FastAPI и передаем ему lifespan менеджер
 app = FastAPI(lifespan=lifespan)
