@@ -1,7 +1,8 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const API_URL = 'https://telegram-bot-zgkr.onrender.com';
+const API_URL = 'http://5.23.55.247:8000';
+// 'https://telegram-bot-zgkr.onrender.com';
 let searchTimeout;
 let currentFilter = 'все';
 let page = 0;
