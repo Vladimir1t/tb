@@ -513,48 +513,57 @@ bottomTabs.forEach(tab => {
     });
 });
 
-// === Swipe Navigation для переключения вкладок ===
+// === Улучшенная Swipe Navigation для переключения вкладок ===
 let touchStartX = 0;
+let touchStartY = 0;
 let touchEndX = 0;
+let touchEndY = 0;
 const swipeThreshold = 50; // Минимальная дистанция свайпа в пикселях
+const swipeRatio = 3; // Соотношение: горизонтальное движение должно быть в N раз больше вертикального
 
 // Обработчик начала касания
 document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
 }, { passive: true });
 
 // Обработчик окончания касания
 document.addEventListener('touchend', e => {
     touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
     handleSwipeGesture();
 }, { passive: true });
 
 // Функция обработки свайп-жеста
 function handleSwipeGesture() {
-    const swipeDistance = touchStartX - touchEndX;
+    const swipeDistanceX = touchStartX - touchEndX;
+    const swipeDistanceY = Math.abs(touchStartY - touchEndY);
     
-    // Определяем направление свайпа
-    if (Math.abs(swipeDistance) > swipeThreshold) {
-        const activeTab = document.querySelector('.bottom-tab.active');
-        const allTabs = Array.from(document.querySelectorAll('.bottom-tab'));
-        const currentIndex = allTabs.indexOf(activeTab);
-        
-        let targetIndex;
-        
-        if (swipeDistance > 0) {
-            // Свайп влево -> следующая вкладка
-            targetIndex = (currentIndex + 1) % allTabs.length;
-        } else {
-            // Свайп вправо -> предыдущая вкладка
-            targetIndex = (currentIndex - 1 + allTabs.length) % allTabs.length;
+    // Проверяем, что горизонтальное движение значительно больше вертикального
+    if (Math.abs(swipeDistanceX) > swipeDistanceY * swipeRatio) {
+        // Проверяем минимальную дистанцию свайпа
+        if (Math.abs(swipeDistanceX) > swipeThreshold) {
+            const activeTab = document.querySelector('.bottom-tab.active');
+            const allTabs = Array.from(document.querySelectorAll('.bottom-tab'));
+            const currentIndex = allTabs.indexOf(activeTab);
+            
+            let targetIndex;
+            
+            if (swipeDistanceX > 0) {
+                // Свайп влево -> следующая вкладка
+                targetIndex = (currentIndex + 1) % allTabs.length;
+            } else {
+                // Свайп вправо -> предыдущая вкладка
+                targetIndex = (currentIndex - 1 + allTabs.length) % allTabs.length;
+            }
+            
+            // Получаем имя целевой вкладки и переключаемся
+            const targetTabName = allTabs[targetIndex].dataset.tab;
+            switchTab(targetTabName);
+            
+            // Обновляем активный класс на вкладках
+            allTabs.forEach(tab => tab.classList.remove('active'));
+            allTabs[targetIndex].classList.add('active');
         }
-        
-        // Получаем имя целевой вкладки и переключаемся
-        const targetTabName = allTabs[targetIndex].dataset.tab;
-        switchTab(targetTabName);
-        
-        // Обновляем активный класс на вкладках
-        allTabs.forEach(tab => tab.classList.remove('active'));
-        allTabs[targetIndex].classList.add('active');
     }
 }
