@@ -1,7 +1,7 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const API_URL = 'https://5.23.55.247/api';
+const API_URL = 'https://tcatalogbot.ru/api';
 // 'https://telegram-bot-zgkr.onrender.com';
 let searchTimeout;
 let currentFilter = 'все';
