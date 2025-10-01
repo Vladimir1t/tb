@@ -45,6 +45,5 @@ app.include_router(projects.router, tags=["Projects"])
 app.include_router(users.router, tags=["Users"])
 app.include_router(debug.router, tags=["Debug"])
 
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
