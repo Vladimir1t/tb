@@ -19,13 +19,11 @@ async def lifespan(app: FastAPI):
     """
     Управляет запуском и остановкой фоновых задач.
     """
-    logger.info("shuffle database start...")
+    logger.info("shuffle database...")
     # bot_thread = threading.Thread(target=run_bot, daemon=True)
     # bot_thread.start()
     database.shuffle_database('aggregator.db')
-    
     yield 
-    
     logger.info("Application is shutting down.")
 
 # Создаем приложение FastAPI и передаем ему lifespan менеджер
