@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Управляет запуском и остановкой фоновых задач (например, бота).
+    Управляет запуском и остановкой фоновых задач.
     """
-    logger.info("Starting bot in a background thread...")
+    logger.info("shuffle database start...")
     # bot_thread = threading.Thread(target=run_bot, daemon=True)
     # bot_thread.start()
     database.shuffle_database('aggregator.db')
