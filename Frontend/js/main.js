@@ -1,7 +1,7 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const API_URL = 'https://tcatalogbot.ru/api';
+const API_URL = 'http://localhost:8000';
 // 'https://telegram-bot-zgkr.onrender.com';
 let searchTimeout;
 let currentFilter = 'все';
@@ -91,13 +91,15 @@ async function loadProjects(tabName, append = false) {
                                         </div>
                                         <div class="channel-info">
                                             <h3>${project.name}</h3>
-                                            <p>Тематика: ${project.theme}</p>
+                                            <div class="theme-badge">${project.theme}</div>
                                         </div>
                                     </a>
                                     <div class="subscribers-mini">
-                                        <span class="subscribers-badge">
-                                            ${project.subscribers.toLocaleString()} подписчиков
-                                        </span>
+                                        ${tabName === 'channels' ? `
+                                            <span class="subscribers-badge">
+                                                ${formatSubscribers(project.subscribers)} подписчиков
+                                            </span>
+                                        ` : ''}
                                         <span class="likes-badge">
                                             <svg class="likes-icon-inline" viewBox="0 0 24 24">
                                                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -132,7 +134,7 @@ async function loadProjects(tabName, append = false) {
                             handleLike(btn.dataset.projectId, btn);
                         };
                     });
-
+        
                     // Обработчик для плашки с количеством лайков
                     tabContent.querySelectorAll('.likes-badge').forEach(badge => {
                         badge.onclick = (event) => {
@@ -146,7 +148,7 @@ async function loadProjects(tabName, append = false) {
                                 setTimeout(() => {
                                     badge.classList.remove('clicked');
                                 }, 300);
-
+        
                                 // Вызываем функцию handleLike
                                 handleLike(likeBtn.dataset.projectId, likeBtn);
                             }
@@ -164,7 +166,7 @@ async function loadProjects(tabName, append = false) {
             loading = false;
             return;
         }
-
+        
         let html = '';
         projects.forEach(project => {
             const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
@@ -182,13 +184,15 @@ async function loadProjects(tabName, append = false) {
                             </div>
                             <div class="channel-info">
                                 <h3>${project.name}</h3>
-                                <p>Тематика: ${project.theme}</p>
+                                <div class="theme-badge">${project.theme}</div>
                             </div>
                         </a>
                         <div class="subscribers-mini">
-                            <span class="subscribers-badge">
-                                ${project.subscribers.toLocaleString()} подписчиков
-                            </span>
+                            ${tabName === 'channels' ? `
+                                <span class="subscribers-badge">
+                                    ${formatSubscribers(project.subscribers)} подписчиков
+                                </span>
+                            ` : ''}
                             <span class="likes-badge">
                                 <svg class="likes-icon-inline" viewBox="0 0 24 24">
                                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -317,6 +321,15 @@ function showLoadingIndicator(tabContent, tabName) {
     
     // Отображаем надпись в контейнере вкладки
     tabContent.innerHTML = `<div class="loading">${text}</div>`;
+}
+
+function formatSubscribers(count) {
+    if (count >= 1000000) {
+        return (count / 1000000).toFixed(2).replace('.00', '').replace('.', ',') + ' млн';
+    } else if (count >= 1000) {
+        return (count / 1000).toFixed(1).replace('.0', '').replace('.', ',') + ' тыс';
+    }
+    return count.toLocaleString();
 }
 
 // Функция для обновления позиции и размера индикатора

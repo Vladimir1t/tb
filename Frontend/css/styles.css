@@ -451,6 +451,57 @@ body {
     display: flex;
 }
 
+.main-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+@keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.main-subtitle {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.25rem;
+    color: #6b7280;
+    text-align: center;
+    font-weight: 400;
+    line-height: 1.6;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.theme-badge {
+    display: inline-block;
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
 .filter-option {
     padding: 12px 20px;
     cursor: pointer;
