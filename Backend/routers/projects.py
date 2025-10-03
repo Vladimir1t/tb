@@ -13,7 +13,6 @@ from auth import verify_telegram_auth
 
 router = APIRouter()
 
-# Кэш для поискового индекса
 search_index = {}
 project_data_cache = {}
 
@@ -37,34 +36,32 @@ def levenshtein_distance(s1: str, s2: str) -> int:
     
     return previous_row[-1]
 
-def find_similar_words_in_index(query_word: str, project_tokens: Set[str], max_distance: int = 2) -> List[str]:
-    """Находит похожие слова в токенах проекта"""
-    similar_words = []
-    for token in project_tokens:
-        distance = levenshtein_distance(query_word, token)
-        if distance <= max_distance and distance > 0:  # Исключаем точные совпадения
-            # Вычисляем степень похожести (1 - normalized_distance)
-            max_len = max(len(query_word), len(token))
-            similarity = 1 - (distance / max_len)
-            similar_words.append((token, similarity))
+# def find_similar_words_in_index(query_word: str, project_tokens: Set[str], max_distance: int = 2) -> List[str]:
+#     """Находит похожие слова в токенах проекта"""
+#     similar_words = []
+#     for token in project_tokens:
+#         distance = levenshtein_distance(query_word, token)
+#         if distance <= max_distance and distance > 0:  # Исключаем точные совпадения
+#             # Вычисляем степень похожести (1 - normalized_distance)
+#             max_len = max(len(query_word), len(token))
+#             similarity = 1 - (distance / max_len)
+#             similar_words.append((token, similarity))
     
-    # Сортируем по убыванию похожести
-    similar_words.sort(key=lambda x: x[1], reverse=True)
-    return [word for word, score in similar_words[:3]]  # Возвращаем топ-3 похожих слов
+#     # Сортируем по убыванию похожести
+#     similar_words.sort(key=lambda x: x[1], reverse=True)
+#     return [word for word, score in similar_words[:3]]  
 
 def expand_with_synonyms(word: str) -> Set[str]:
     """Расширяет слово синонимами"""
     synonyms = set()
     word_lower = word.lower()
     
-    # Добавляем само слово
     synonyms.add(word_lower)
     
     # Ищем синонимы в базе
     if word_lower in SYNONYM_DB:
         synonyms.update(SYNONYM_DB[word_lower])
     
-    # Также проверяем возможные основы слов
     for key, synonym_list in SYNONYM_DB.items():
         if word_lower in synonym_list:
             synonyms.add(key)
@@ -84,8 +81,6 @@ def expand_query_with_synonyms(query: str) -> Set[str]:
     # print(f"🔤 Query expansion: '{query}' → {expanded_terms}")
     return expanded_terms
 
-# routers/projects.py
-
 def build_search_index(conn):
     """Строим улучшенный поисковый индекс с поддержкой синонимов"""
     global search_index, project_data_cache
@@ -99,7 +94,6 @@ def build_search_index(conn):
     
     # print(f"🔍 Building search index for {len(rows)} projects")
     
-    # Собираем все уникальные токены для быстрого поиска похожих слов
     all_unique_tokens = set()
     
     for row in rows:
@@ -107,21 +101,16 @@ def build_search_index(conn):
         project_id = project['id']
         project_data_cache[project_id] = project
         
-        # Создаем текстовый контент для индексации
         content = f"{project['name']} {project['theme']} {project['type']}".lower()
         
-        # Токенизация
         words = re.findall(r'\b\w{2,}\b', content)
         
-        # Добавляем синонимы в индекс
         enhanced_tokens = set()
         for word in words:
             enhanced_tokens.add(word)
-            # Добавляем синонимы для каждого слова
             synonyms = expand_with_synonyms(word)
             enhanced_tokens.update(synonyms)
             
-            # Добавляем n-grams для частичного поиска
             if len(word) > 3:
                 for i in range(len(word) - 2):
                     enhanced_tokens.add(word[i:i+3])
@@ -129,15 +118,12 @@ def build_search_index(conn):
         word_count = Counter(enhanced_tokens)
         total_words = len(enhanced_tokens)
         
-        # Сохраняем TF (Term Frequency)
         search_index[project_id] = {
             'tf': {word: count/total_words for word, count in word_count.items()},
             'content': content,
             'original_words': words,
-            'all_tokens': set(enhanced_tokens)  # Сохраняем все токены для поиска похожих слов
-        }
-        
-        # Собираем все уникальные токены
+            'all_tokens': set(enhanced_tokens) 
+        }        
         all_unique_tokens.update(enhanced_tokens)
     
     # Сохраняем глобальный список всех токенов для быстрого поиска
@@ -157,7 +143,7 @@ def find_similar_words_fast(query_word: str, max_distance: int = 2) -> List[str]
             continue
             
         distance = levenshtein_distance(query_lower, token)
-        if distance <= max_distance and distance > 0:  # Исключаем точные совпадения
+        if distance <= max_distance and distance > 0:  
             max_len = max(len(query_lower), len(token))
             similarity = 1 - (distance / max_len)
             similar_words.append((token, similarity))
@@ -177,7 +163,6 @@ def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
         # print("❌ Search index is empty!")
         return []
     
-    # Расширяем запрос синонимами
     expanded_terms = expand_query_with_synonyms(query)
     
     if not expanded_terms:
@@ -186,10 +171,8 @@ def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
     
     # print(f"🔍 Expanded terms: {len(expanded_terms)} terms")
     
-    # Токены оригинального запроса
     original_query_words = re.findall(r'\b\w{2,}\b', query.lower())
     
-    # Предварительно находим похожие слова для всех слов запроса
     similar_words_cache = {}
     for query_word in original_query_words:
         similar_words = find_similar_words_fast(query_word)
@@ -197,7 +180,6 @@ def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
             similar_words_cache[query_word] = similar_words
             # print(f"   📝 Found similar words for '{query_word}': {similar_words}")
     
-    # Создаем TF для расширенного запроса
     query_tf = {term: 1.0/len(expanded_terms) for term in expanded_terms}
     
     similarities = []
@@ -226,10 +208,8 @@ def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
         
         # Способ 2: Быстрый поиск похожих слов (орфографические ошибки)
         for query_word, similar_words in similar_words_cache.items():
-            # Проверяем, есть ли похожие слова в токенах проекта
             matched_similar = set(similar_words) & project_tokens
             if matched_similar:
-                # Добавляем бонус за похожие слова
                 similarity += 0.8 * len(matched_similar)
         
         # Способ 3: Косинусное сходство с расширенными терминами
@@ -251,14 +231,12 @@ def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
     
     # print(f"📊 Found {len(similarities)} results above threshold {threshold}")
     
-    # Выводим детальную информацию только о топ-результатах
     for pid, score in similarities[:3]:
         project_info = project_data_cache.get(pid, {})
         # print(f"   🎯 Project {pid}: '{project_info.get('name', 'N/A')}' - Score: {score:.4f}")
     
     return [{'id': pid, 'score': score} for pid, score in similarities[:top_k]]
 
-# Добавим глобальную переменную для всех токенов
 ALL_TOKENS = []
 
 def calculate_cosine_similarity(query_tf, doc_tf):
@@ -309,14 +287,12 @@ async def get_projects(
         
         # print(f"🎯 RECEIVED REQUEST: type={type}, theme={theme}, search={search}, smart_search={smart_search}, use_synonyms={use_synonyms}, spell_check={spell_check}")
         
-        # Инициализируем поисковый индекс при первом вызове
         if not search_index:
             print("🔄 Building search index...")
             build_search_index(conn)
         else:
             print(f"✅ Search index ready with {len(search_index)} projects")
         
-        # Создаем функцию для регистронезависимого LIKE
         def ilike(pattern, value):
             if pattern is None or value is None:
                 return False
@@ -339,10 +315,8 @@ async def get_projects(
             # print(f"🎯 Use synonyms: {use_synonyms}, Spell check: {spell_check}")
             
             if use_synonyms or spell_check:
-                # Используем улучшенный поиск с синонимами и исправлением ошибок
                 semantic_results = spell_aware_semantic_search(normalized_search, similarity_threshold, limit * 5)
             else:
-                # Используем обычный улучшенный поиск
                 semantic_results = enhanced_semantic_search(normalized_search, similarity_threshold, limit * 5)
             
             # print(f"🎯 Semantic results: {len(semantic_results)} projects found")
@@ -368,7 +342,6 @@ async def get_projects(
             like_pattern = f"%{search}%"
             params.extend([like_pattern, like_pattern, like_pattern])
 
-        # Фильтрация по типу
         if type:
             type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
             normalized_type = type_mapping.get(type.lower(), type.lower())
@@ -376,14 +349,12 @@ async def get_projects(
             params.append(normalized_type)
             # print(f"🔧 Type filter: {normalized_type}")
         
-        # Фильтрация по теме
         if theme:
             query += " AND (ilike(?, name) OR ilike(?, theme))"
             like_pattern = f"%{theme}%"
             params.extend([like_pattern, like_pattern])
             # print(f"🔧 Theme filter: {theme}")
 
-        # Сортировка
         if smart_search and semantic_ids and not fallback_search:
             order_case = "CASE "
             for i, project_id in enumerate(semantic_ids):
@@ -442,8 +413,6 @@ def enhanced_semantic_search(query, threshold=0.01, top_k=20):
         return []
     
     # print(f"🔍 Query words: {query_words}")
-    
-    # Вычисляем сходство для каждого проекта
     similarities = []
     
     for project_id, project_data in search_index.items():
@@ -461,12 +430,10 @@ def enhanced_semantic_search(query, threshold=0.01, top_k=20):
             cosine_sim = calculate_cosine_similarity(query_tf, project_data['tf'])
             similarity = max(similarity, cosine_sim)
         
-        # Увеличиваем score для проектов, где слова запроса в названии
         project_info = project_data_cache.get(project_id, {})
         project_name = project_info.get('name', '').lower()
         project_theme = project_info.get('theme', '').lower()
         
-        # Проверяем вхождение в название
         for q_word in query_words:
             if q_word in project_name:
                 similarity += 0.3
@@ -476,12 +443,10 @@ def enhanced_semantic_search(query, threshold=0.01, top_k=20):
         if similarity >= threshold:
             similarities.append((project_id, similarity))
     
-    # Сортируем по убыванию сходства
     similarities.sort(key=lambda x: x[1], reverse=True)
     
     # print(f"📊 Found {len(similarities)} results above threshold {threshold}")
     
-    # Выводим детальную информацию о топ-результатах
     for pid, score in similarities[:5]:
         project_info = project_data_cache.get(pid, {})
         # print(f"   🎯 Project {pid}: '{project_info.get('name', 'N/A')}'")
