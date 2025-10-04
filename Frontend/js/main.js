@@ -47,9 +47,11 @@ async function loadProjects(tabName, append = false) {
 
     try {
         // Если поиск пустой, показываем дефолтные 10 каналов
-        const searchParam = query ? `&search=${encodeURIComponent(query)}` : '';
+        const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
 
-        const response = await fetch(`${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}${searchParam}&limit=10&offset=${page*10}`);
+        const response = await fetch(
+        `${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}${searchParam}&limit=10&offset=${page*10}`
+        );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const projects = await response.json();
