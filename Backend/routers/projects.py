@@ -152,33 +152,32 @@ def find_similar_words_fast(query_word: str, max_distance: int = 2) -> List[str]
     similar_words.sort(key=lambda x: x[1], reverse=True)
     return [word for word, score in similar_words[:3]]
 
-def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
-    """Оптимизированный умный поиск с поддержкой синонимов и орфографических ошибок"""
+def spell_aware_semantic_search(query, threshold=0.2, top_k=30):
+    """Умный поиск с правильными приоритетами"""
     global search_index
     
-    # print(f"🔍 Starting optimized spell-aware search for: '{query}'")
-    # print(f"🔍 Threshold: {threshold}, Top K: {top_k}")
+    print(f"🔍 Starting spell-aware search for: '{query}'")
     
     if not search_index:
-        # print("❌ Search index is empty!")
+        print("❌ Search index is empty!")
         return []
     
     expanded_terms = expand_query_with_synonyms(query)
     
     if not expanded_terms:
-        # print("❌ No valid terms after expansion")
+        print("❌ No valid terms after expansion")
         return []
-    
-    # print(f"🔍 Expanded terms: {len(expanded_terms)} terms")
     
     original_query_words = re.findall(r'\b\w{2,}\b', query.lower())
     
+    use_detailed_spell_check = len(original_query_words) <= 3
+    
     similar_words_cache = {}
-    for query_word in original_query_words:
-        similar_words = find_similar_words_fast(query_word)
-        if similar_words:
-            similar_words_cache[query_word] = similar_words
-            # print(f"   📝 Found similar words for '{query_word}': {similar_words}")
+    if use_detailed_spell_check:
+        for query_word in original_query_words:
+            similar_words = find_similar_words_fast(query_word)
+            if similar_words:
+                similar_words_cache[query_word] = similar_words
     
     query_tf = {term: 1.0/len(expanded_terms) for term in expanded_terms}
     
@@ -191,51 +190,91 @@ def spell_aware_semantic_search(query, threshold=0.01, top_k=30):
         project_theme = project_info.get('theme', '').lower()
         project_tokens = project_data['all_tokens']
         
-        # Способ 1: Быстрые совпадения с расширенными терминами
+        # ПРИОРИТЕТ 1: Точные совпадения в названии (самый высокий приоритет)
+        exact_name_matches = 0
         for term in expanded_terms:
-            if term in project_name:
-                # Полное слово в названии - максимальный score
-                if any(term == word for word in project_data['original_words']):
-                    similarity += 2.0
-                else:
-                    similarity += 1.5
-            
-            if term in project_theme:
-                if any(term == word for word in project_data['original_words']):
-                    similarity += 1.5
-                else:
-                    similarity += 1.0
+            if term in project_name and any(term == word for word in project_data['original_words']):
+                exact_name_matches += 1
+        if exact_name_matches > 0:
+            similarity += exact_name_matches * 3.0  
         
-        # Способ 2: Быстрый поиск похожих слов (орфографические ошибки)
-        for query_word, similar_words in similar_words_cache.items():
-            matched_similar = set(similar_words) & project_tokens
-            if matched_similar:
-                similarity += 0.8 * len(matched_similar)
+        # ПРИОРИТЕТ 2: Точные совпадения в теме
+        exact_theme_matches = 0
+        for term in expanded_terms:
+            if term in project_theme and any(term == word for word in project_data['original_words']):
+                exact_theme_matches += 1
+        if exact_theme_matches > 0:
+            similarity += exact_theme_matches * 2.0  
         
-        # Способ 3: Косинусное сходство с расширенными терминами
+        # ПРИОРИТЕТ 3: Частичные совпадения в названии
+        partial_name_matches = 0
+        for term in expanded_terms:
+            if term in project_name and not any(term == word for word in project_data['original_words']):
+                partial_name_matches += 1
+        if partial_name_matches > 0:
+            similarity += partial_name_matches * 1.5
+        
+        # ПРИОРИТЕТ 4: Частичные совпадения в теме
+        partial_theme_matches = 0
+        for term in expanded_terms:
+            if term in project_theme and not any(term == word for word in project_data['original_words']):
+                partial_theme_matches += 1
+        if partial_theme_matches > 0:
+            similarity += partial_theme_matches * 1.0
+        
+        # ПРИОРИТЕТ 5: Похожие слова
+        if use_detailed_spell_check and similar_words_cache:
+            similar_word_bonus = 0
+            for query_word, similar_words in similar_words_cache.items():
+                matched_similar = set(similar_words) & project_tokens
+                if matched_similar:
+                    similar_word_bonus += min(0.5, 0.2 * len(matched_similar))
+            similarity += similar_word_bonus
+        
+        # ПРИОРИТЕТ 6: 
         cosine_sim = calculate_cosine_similarity(query_tf, project_data['tf'])
-        similarity = max(similarity, cosine_sim)
+        similarity += min(cosine_sim, 1.0)
         
-        # Способ 4: Бонус за точное совпадение с оригинальным запросом
-        for orig_word in original_query_words:
-            if orig_word in project_name:
-                similarity += 0.5
-            if orig_word in project_theme:
-                similarity += 0.3
+        # Бонус за премиум проекты
+        if project_info.get('is_premium'):
+            similarity += 0.1
         
         if similarity >= threshold:
-            similarities.append((project_id, similarity))
-    
-    # Сортируем по убыванию сходства
-    similarities.sort(key=lambda x: x[1], reverse=True)
+            similarities.append((project_id, similarity, exact_name_matches, exact_theme_matches))
+
+    if similarities:
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        scores = [score for _, score, _, _ in similarities]
+        
+        if len(scores) > 5:
+            top_score = scores[0]
+            
+            # Динамический порог: минимум 60% от лучшего результата
+            dynamic_threshold = max(threshold, top_score * 0.60)
+            absolute_min_threshold = 0.4  
+            final_threshold = min(dynamic_threshold, absolute_min_threshold)
+            
+            print(f"🎯 Dynamic threshold: {final_threshold:.3f} (top_score: {top_score:.3f})")
+            
+            filtered_count_before = len(similarities)
+            similarities = [
+                (pid, score, name_m, theme_m) 
+                for pid, score, name_m, theme_m in similarities 
+                if score >= final_threshold
+            ]
+            filtered_count_after = len(similarities)
+            
+            print(f"📊 Filtered: {filtered_count_before} → {filtered_count_after} results")
     
     # print(f"📊 Found {len(similarities)} results above threshold {threshold}")
     
-    for pid, score in similarities[:3]:
-        project_info = project_data_cache.get(pid, {})
-        # print(f"   🎯 Project {pid}: '{project_info.get('name', 'N/A')}' - Score: {score:.4f}")
+    # for pid, score, name_matches, theme_matches in similarities[:5]:
+    #     project_info = project_data_cache.get(pid, {})
+        # print(f"   🎯 Project {pid}: '{project_info.get('name', 'N/A')}'")
+        # print(f"      Theme: {project_info.get('theme', 'N/A')}")
+        # print(f"      Score: {score:.4f} (name_matches: {name_matches}, theme_matches: {theme_matches})")
     
-    return [{'id': pid, 'score': score} for pid, score in similarities[:top_k]]
+    return [{'id': pid, 'score': score} for pid, score, _, _ in similarities[:top_k]]
 
 ALL_TOKENS = []
 
@@ -275,7 +314,7 @@ async def get_projects(
     search: Optional[str] = None,
     smart_search: Optional[str] = None,
     use_synonyms: bool = Query(True, description="Использовать поиск по синонимам"),
-    spell_check: bool = Query(True, description="Исправлять орфографические ошибки"),  # Новый параметр
+    spell_check: bool = Query(True, description="Исправлять орфографические ошибки"),  
     similarity_threshold: float = Query(0.01, ge=0.0, le=1.0),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0)
