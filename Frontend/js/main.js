@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 const API_URL = 'https://tcatalogbot.ru/api';
-//  'http://localhost:8000';
+// 'http://localhost:8000';
 let searchTimeout;
 let currentFilter = 'все';
 let page = 0;
