@@ -2,3 +2,5 @@ database.db
 channals.db
 session_1.session
 __pycache__/
+.env
+venv/
