@@ -11,6 +11,9 @@ from models import Project
 from database_connect import get_db_connection
 from .synonyms import SYNONYM_DB
 from auth import verify_telegram_auth
+from functools import lru_cache
+import time
+import hashlib
 
 router = APIRouter()
 
@@ -18,6 +21,173 @@ search_index = {}
 project_data_cache = {}
 ALL_TOKENS = []
 _index_lock = threading.Lock()
+
+_search_cache = {}
+_cache_lock = threading.Lock()
+_CACHE_TTL = 300  
+
+def get_search_cache_key(query: str, params: dict) -> str:
+    """Генерирует ключ для кэша поиска"""
+    key_data = f"{query}_{params}"
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+@lru_cache(maxsize=100)
+def perform_search_once(query: str, use_synonyms: bool, spell_check: bool, threshold: float) -> tuple:
+    """Выполняет поиск один раз и кэширует результаты"""
+    print(f"🔍 Performing search for: '{query}'")
+    
+    normalized_search = normalize_search_term(query)
+    
+    if use_synonyms or spell_check:
+        semantic_results = spell_aware_semantic_search(normalized_search, threshold, 1000)  # Большой лимит
+    else:
+        semantic_results = enhanced_semantic_search(normalized_search, threshold, 1000)
+    
+    semantic_ids = [result['id'] for result in semantic_results]
+    print(f"✅ Found {len(semantic_ids)} total projects via semantic search")
+    
+    return tuple(semantic_ids)  
+
+@router.get("/projects/", response_model=List[Project])
+async def get_projects(
+    type: Optional[str] = None,
+    theme: Optional[str] = None,
+    search: Optional[str] = None,
+    smart_search: Optional[str] = None,
+    use_synonyms: bool = Query(True, description="Использовать поиск по синонимам"),
+    spell_check: bool = Query(True, description="Исправлять орфографические ошибки"),  
+    similarity_threshold: float = Query(0.01, ge=0.0, le=1.0),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0)
+):
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        
+        with _index_lock:
+            if not search_index:
+                print("🔄 Building search index...")
+                build_search_index(conn)
+            else:
+                print(f"✅ Search index ready with {len(search_index)} projects")
+        
+        def ilike(pattern, value):
+            if pattern is None or value is None:
+                return False
+            pattern_regex = pattern.replace('%', '.*').replace('_', '.')
+            return bool(re.match(f"^{pattern_regex}$", value, re.IGNORECASE))
+        
+        conn.create_function("ilike", 2, ilike)
+        cursor = conn.cursor()
+        
+        query = "SELECT * FROM projects WHERE 1=1"
+        params = []
+
+        semantic_ids = []
+        fallback_search = False
+        
+        if smart_search:
+            print(f"🔍 Smart search: '{smart_search}' (offset: {offset}, limit: {limit})")
+            
+            cache_key = f"{smart_search}_{use_synonyms}_{spell_check}_{similarity_threshold}"
+            if cache_key not in _search_cache or time.time() - _search_cache[cache_key]['timestamp'] > _CACHE_TTL:
+                semantic_ids_list = perform_search_once(smart_search, use_synonyms, spell_check, similarity_threshold)
+                with _cache_lock:
+                    _search_cache[cache_key] = {
+                        'ids': semantic_ids_list,
+                        'timestamp': time.time()
+                    }
+            else:
+                semantic_ids_list = _search_cache[cache_key]['ids']
+                print(f"📦 Using cached search results ({len(semantic_ids_list)} items)")
+            
+            semantic_ids = list(semantic_ids_list)
+            
+            if semantic_ids:
+                start_idx = offset
+                end_idx = offset + limit
+                paginated_ids = semantic_ids[start_idx:end_idx]
+                
+                if paginated_ids:
+                    placeholders = ','.join('?' * len(paginated_ids))
+                    query += f" AND id IN ({placeholders})"
+                    params.extend(paginated_ids)
+                    print(f"📄 Pagination: {start_idx}-{end_idx} of {len(semantic_ids)}")
+                else:
+                    query += " AND 1=0"
+            else:
+                print("❌ No results from semantic search, using fallback...")
+                fallback_search = True
+                query += " AND (ilike(?, name) OR ilike(?, theme))"
+                like_pattern = f"%{smart_search}%"
+                params.extend([like_pattern, like_pattern])
+
+        elif search:
+            print(f"🔍 Regular search: '{search}'")
+            query += " AND (ilike(?, name) OR ilike(?, theme) OR ilike(?, type))"
+            like_pattern = f"%{search}%"
+            params.extend([like_pattern, like_pattern, like_pattern])
+
+        if type:
+            type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
+            normalized_type = type_mapping.get(type.lower(), type.lower())
+            query += " AND ilike(?, type)"
+            params.append(normalized_type)
+        
+        if theme:
+            query += " AND (ilike(?, name) OR ilike(?, theme))"
+            like_pattern = f"%{theme}%"
+            params.extend([like_pattern, like_pattern])
+
+        if smart_search and semantic_ids and not fallback_search:
+            # Для пагинированных ID сохраняем порядок из семантического поиска
+            if paginated_ids:
+                order_case = "CASE "
+                for i, project_id in enumerate(paginated_ids):
+                    order_case += f"WHEN id = {project_id} THEN {i} "
+                order_case += f"ELSE {len(paginated_ids)} END"
+                query += f" ORDER BY {order_case}"
+            else:
+                query += " ORDER BY is_premium DESC, likes DESC"
+        else:
+            query += " ORDER BY is_premium DESC, likes DESC"
+
+        if not smart_search or fallback_search:
+            query += " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+        print(f"📝 Executing query with {len(params)} params")
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        projects = []
+        for row in rows:
+            project_data = dict(row)
+            if project_data.get("icon"):
+                project_data["icon"] = f"data:image/png;base64,{base64.b64encode(project_data['icon']).decode()}"
+            else:
+                project_data["icon"] = None
+            projects.append(project_data)
+        
+        print(f"✅ Returning {len(projects)} projects")
+        return projects
+        
+    except sqlite3.Error as e:
+        print(f"❌ SQL error: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+@router.post("/clear-search-cache")
+async def clear_search_cache():
+    """Очищает кэш поиска (для администрирования)"""
+    with _cache_lock:
+        _search_cache.clear()
+    perform_search_once.cache_clear()
+    return {"message": "Search cache cleared"}
+
 
 def levenshtein_distance(s1: str, s2: str) -> int:
     """Вычисляет расстояние Левенштейна между двумя строками"""
@@ -299,7 +469,6 @@ def spell_aware_semantic_search(query, threshold=0.2, top_k=30):
     
     print(f"📊 Found {len(similarities)} results above threshold {threshold}")
     
-    # Выводим топ-5 результатов для отладки
     for pid, score, name_matches, theme_matches in similarities[:5]:
         project_info = project_data_cache.get(pid, {})
         print(f"   🎯 Project {pid}: '{project_info.get('name', 'N/A')}'")
@@ -338,134 +507,6 @@ def normalize_search_term(term):
     
     term = re.sub(r'\s+', ' ', term.lower()).strip()
     return term
-
-@router.get("/projects/", response_model=List[Project])
-async def get_projects(
-    type: Optional[str] = None,
-    theme: Optional[str] = None,
-    search: Optional[str] = None,
-    smart_search: Optional[str] = None,
-    use_synonyms: bool = Query(True, description="Использовать поиск по синонимам"),
-    spell_check: bool = Query(True, description="Исправлять орфографические ошибки"),  
-    similarity_threshold: float = Query(0.01, ge=0.0, le=1.0),
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0)
-):
-    conn = None
-    try:
-        conn = get_db_connection()
-        conn.row_factory = sqlite3.Row
-        
-        # print(f"🎯 RECEIVED REQUEST: type={type}, theme={theme}, search={search}, smart_search={smart_search}, use_synonyms={use_synonyms}, spell_check={spell_check}")
-        
-        # Проверяем и обновляем индекс при необходимости
-        with _index_lock:
-            if not search_index:
-                print("🔄 Building search index...")
-                build_search_index(conn)
-            else:
-                print(f"✅ Search index ready with {len(search_index)} projects")
-        
-        def ilike(pattern, value):
-            if pattern is None or value is None:
-                return False
-            pattern_regex = pattern.replace('%', '.*').replace('_', '.')
-            return bool(re.match(f"^{pattern_regex}$", value, re.IGNORECASE))
-        
-        conn.create_function("ilike", 2, ilike)
-        cursor = conn.cursor()
-        
-        query = "SELECT * FROM projects WHERE 1=1"
-        params = []
-
-        # Обработка умного поиска
-        semantic_ids = []
-        fallback_search = False
-        
-        if smart_search:
-            # print(f"🎯 SMART SEARCH ACTIVATED: '{smart_search}'")
-            normalized_search = normalize_search_term(smart_search)
-            # print(f"🎯 Use synonyms: {use_synonyms}, Spell check: {spell_check}")
-            
-            if use_synonyms or spell_check:
-                semantic_results = spell_aware_semantic_search(normalized_search, similarity_threshold, limit * 5)
-            else:
-                semantic_results = enhanced_semantic_search(normalized_search, similarity_threshold, limit * 5)
-            
-            # print(f"🎯 Semantic results: {len(semantic_results)} projects found")
-            
-            semantic_ids = [result['id'] for result in semantic_results]
-            
-            if semantic_ids:
-                print(f"✅ Found {len(semantic_ids)} projects via semantic search")
-                placeholders = ','.join('?' * len(semantic_ids))
-                query += f" AND id IN ({placeholders})"
-                params.extend(semantic_ids)
-            else:
-                print("❌ No results from semantic search, using fallback...")
-                fallback_search = True
-                query += " AND (ilike(?, name) OR ilike(?, theme))"
-                like_pattern = f"%{smart_search}%"
-                params.extend([like_pattern, like_pattern])
-
-        # Обычный поиск
-        elif search:
-            # print(f"🔍 REGULAR SEARCH: '{search}'")
-            query += " AND (ilike(?, name) OR ilike(?, theme) OR ilike(?, type))"
-            like_pattern = f"%{search}%"
-            params.extend([like_pattern, like_pattern, like_pattern])
-
-        if type:
-            type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
-            normalized_type = type_mapping.get(type.lower(), type.lower())
-            query += " AND ilike(?, type)"
-            params.append(normalized_type)
-            # print(f"🔧 Type filter: {normalized_type}")
-        
-        if theme:
-            query += " AND (ilike(?, name) OR ilike(?, theme))"
-            like_pattern = f"%{theme}%"
-            params.extend([like_pattern, like_pattern])
-            print(f"🔧 Theme filter: {theme}")
-
-        if smart_search and semantic_ids and not fallback_search:
-            order_case = "CASE "
-            for i, project_id in enumerate(semantic_ids):
-                order_case += f"WHEN id = {project_id} THEN {i} "
-            order_case += f"ELSE {len(semantic_ids)} END"
-            query += f" ORDER BY {order_case}, is_premium DESC, likes DESC"
-            # print(f"📊 Sorting by semantic relevance")
-        else:
-            query += " ORDER BY is_premium DESC, likes DESC"
-            print(f"📊 Sorting by premium & likes")
-
-        query += " LIMIT ? OFFSET ?"
-        params.extend([limit, offset])
-
-        # print(f"📝 Final SQL: {query}")
-        # print(f"📝 Params count: {len(params)}")
-
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-
-        projects = []
-        for row in rows:
-            project_data = dict(row)
-            if project_data.get("icon"):
-                project_data["icon"] = f"data:image/png;base64,{base64.b64encode(project_data['icon']).decode()}"
-            else:
-                project_data["icon"] = None
-            projects.append(project_data)
-        
-        # print(f"✅ Returning {len(projects)} projects")
-        return projects
-        
-    except sqlite3.Error as e:
-        print(f"❌ SQL error: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
-    finally:
-        if conn:
-            conn.close()
 
 def enhanced_semantic_search(query, threshold=0.01, top_k=20):
     """Улучшенный семантический поиск с поддержкой частичных совпадений"""
