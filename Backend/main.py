@@ -103,6 +103,11 @@ async def lifespan(app: FastAPI):
     
     logger.info("🔴 Application is shutting down.")
 
+@app.get("/health")
+async def health_check():
+    """Простой health check"""
+    return {"status": "healthy", "message": "Server is running"}
+
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(

@@ -16,15 +16,9 @@ jobs:
 
       - name: Create CI test database
         run: |
-          # Удаляем большую БД если она скачалась (будет битая)
           rm -f Backend/aggregator.db
-          
-          # Создаем легковесную тестовую БД
           python .github/create-test-db.py
-          
-          # Проверяем
-          echo "📊 Database info:"
-          ls -lh Backend/aggregator.db
+          echo "📊 Database created:"
           sqlite3 Backend/aggregator.db "SELECT COUNT(*) FROM projects;"
 
       - name: Set up Docker Buildx
@@ -37,18 +31,36 @@ jobs:
         run: |
           # Запускаем контейнер
           docker run -d --name test-container -p 8000:8000 your-app-name
-          sleep 15
+          
+          # Ждем запуска
+          sleep 10
           
           echo "📋 Container logs:"
           docker logs test-container
           
-          # Проверяем здоровье
-          if curl -s http://localhost:8000/health | grep -q "healthy"; then
+          # Проверяем health endpoint
+          echo "🔍 Testing health endpoint..."
+          response=$(curl -s -w "%{http_code}" http://localhost:8000/health)
+          http_code=${response: -3}
+          body=${response%???}
+          
+          echo "Response code: $http_code"
+          echo "Response body: $body"
+          
+          if [ "$http_code" -eq 200 ] && echo "$body" | grep -q "healthy"; then
             echo "✅ Health check passed"
           else
             echo "❌ Health check failed"
             docker logs test-container
             exit 1
+          fi
+          
+          # Дополнительная проверка root endpoint
+          echo "🔍 Testing root endpoint..."
+          if curl -s http://localhost:8000/ | grep -q "Telegram Bot"; then
+            echo "✅ Root endpoint working"
+          else
+            echo "⚠️ Root endpoint check failed"
           fi
           
           # Останавливаем контейнер
