@@ -13,41 +13,37 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Debug - List files
+      - name: Create CI test database
         run: |
-          echo "📁 Repository structure:"
-          find . -name "*.db" -o -name "*.sqlite*" | head -20
-          echo "📁 Backend directory:"
-          ls -la Backend/ || echo "No Backend directory"
+          # Удаляем большую БД если она скачалась (будет битая)
+          rm -f Backend/aggregator.db
+          
+          # Создаем легковесную тестовую БД
+          python .github/create-test-db.py
+          
+          # Проверяем
+          echo "📊 Database info:"
+          ls -lh Backend/aggregator.db
+          sqlite3 Backend/aggregator.db "SELECT COUNT(*) FROM projects;"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Build Docker image
-        run: |
-          docker build -t your-app-name .
+        run: docker build -t your-app-name .
 
       - name: Test Docker container
         run: |
           # Запускаем контейнер
           docker run -d --name test-container -p 8000:8000 your-app-name
+          sleep 15
           
-          # Даем время на запуск
-          sleep 10
-          
-          # Проверяем логи
           echo "📋 Container logs:"
           docker logs test-container
           
-          # Проверяем файлы в контейнере
-          echo "📁 Files in container:"
-          docker exec test-container ls -la /app/Backend/
-          
-          # Проверяем здоровье приложения
-          if docker exec test-container curl -s http://localhost:8000/health > /dev/null 2>&1; then
+          # Проверяем здоровье
+          if curl -s http://localhost:8000/health | grep -q "healthy"; then
             echo "✅ Health check passed"
           else
             echo "❌ Health check failed"
