@@ -394,6 +394,92 @@ def init_db(db_path: str = DB_NAME):
             conn.close()
         print("🏁 Инициализация завершена")
 
+def remove_duplicate_channels(db_path: str = DB_NAME):
+    """Удаляет повторяющиеся каналы/боты из базы данных по полю link"""
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Сначала посчитаем общее количество записей
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        total_before = cursor.fetchone()[0]
+        
+        print(f"🔍 Поиск дубликатов в базе данных...")
+        print(f"📊 Всего записей до очистки: {total_before}")
+        
+        # Находим дубликаты по полю link
+        cursor.execute('''
+            SELECT link, COUNT(*) as count 
+            FROM projects 
+            GROUP BY link 
+            HAVING COUNT(*) > 1
+        ''')
+        duplicates = cursor.fetchall()
+        
+        if not duplicates:
+            print("✅ Дубликаты не найдены")
+            return
+        
+        print(f"📋 Найдено {len(duplicates)} ссылок с дубликатами:")
+        
+        total_duplicates_to_remove = 0
+        
+        for link, count in duplicates:
+            print(f"   {link}: {count} записей")
+            total_duplicates_to_remove += (count - 1)
+        
+        print(f"🗑️  Всего будет удалено {total_duplicates_to_remove} дубликатов")
+        
+        # Удаляем дубликаты, оставляя только первую запись для каждого link
+        cursor.execute('''
+            DELETE FROM projects 
+            WHERE id NOT IN (
+                SELECT MIN(id) 
+                FROM projects 
+                GROUP BY link
+            )
+        ''')
+        
+        conn.commit()
+        
+        # Проверяем результат
+        cursor.execute("SELECT COUNT(*) FROM projects")
+        total_after = cursor.fetchone()[0]
+        
+        removed_count = total_before - total_after
+        
+        print(f"✅ Очистка завершена!")
+        print(f"📊 Статистика:")
+        print(f"   • Было записей: {total_before}")
+        print(f"   • Стало записей: {total_after}")
+        print(f"   • Удалено дубликатов: {removed_count}")
+        
+        # Проверяем, что дубликатов больше нет
+        cursor.execute('''
+            SELECT COUNT(*) 
+            FROM (
+                SELECT link 
+                FROM projects 
+                GROUP BY link 
+                HAVING COUNT(*) > 1
+            )
+        ''')
+        remaining_duplicates = cursor.fetchone()[0]
+        
+        if remaining_duplicates == 0:
+            print("✅ Все дубликаты успешно удалены!")
+        else:
+            print(f"⚠️  Осталось {remaining_duplicates} групп дубликатов")
+            
+    except Exception as e:
+        print(f"❌ Ошибка при удалении дубликатов: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
 if __name__ == "__main__":
     # add_new_chanels()
-    shuffle_database()
+    # shuffle_database()
+    remove_duplicate_channels()
