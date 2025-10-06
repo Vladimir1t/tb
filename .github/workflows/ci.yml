@@ -22,24 +22,32 @@ jobs:
 
       - name: Test Docker container
         run: |
+          # Собираем образ
+          docker build -t your-app-name .
+          
+          # Запускаем контейнер
           docker run -d --name test-container -p 8000:8000 your-app-name
           
-          docker exec test-container apt-get update
-          docker exec test-container apt-get install -y curl
+          # Ждем запуска
+          sleep 15
           
-          sleep 10
+          # Проверяем, что контейнер запущен
+          docker ps | grep test-container || (echo "❌ Container not running" && exit 1)
           
-          docker ps | grep test-container || exit 1
-          
-          if docker logs test-container 2>&1 | grep -E "CRITICAL|ERROR"; then
-            echo "❌ Found errors in container logs!"
+          # Проверяем логи на ошибки
+          if docker logs test-container 2>&1 | grep -E "CRITICAL|ERROR|Error"; then
+            echo "❌ Found errors in container logs:"
+            docker logs test-container
             exit 1
           fi
           
-          if ! docker exec test-container curl -s http://localhost:8000/; then
-            echo "❌ Server is not responding!"
+          # Проверяем здоровье приложения
+          if ! docker exec test-container curl -s -f http://localhost:8000/health > /dev/null; then
+            echo "❌ Health check failed!"
+            docker logs test-container
             exit 1
           fi
           
+          echo "✅ All tests passed!"
           docker stop test-container
           docker rm test-container
