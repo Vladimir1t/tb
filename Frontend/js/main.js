@@ -140,7 +140,7 @@ async function loadContentSections() {
     for (const { type, containerId } of types) {
         try {
             const offset = getRandomOffset();
-            const response = await fetch(`${API_URL}/projects/?type=${type}&limit=5&offset=${offset}`);
+            const response = await fetch(`${API_URL}/projects/?type=${type}&limit=10&offset=${offset}`);
             
             if (response.ok) {
                 const data = await response.json();

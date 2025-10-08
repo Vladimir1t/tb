@@ -979,8 +979,16 @@ body {
 /* Content Grid - вертикальное расположение для блоков на главной */
 .content-grid {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-12);
+    flex-direction: row; /* горизонтальное расположение */
+    overflow-x: auto; /* горизонтальный скролл */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* плавный свайп на iOS */
+}
+
+.content-grid .card {
+    flex: 0 0 280px; /* фиксированная ширина 280px */
+    min-width: 280px; /* не сжимается */
+    max-width: 280px; /* не растягивается */
 }
 
 /* Settings Profile Section */
@@ -2068,5 +2076,11 @@ body {
 @media (prefers-color-scheme: dark) {
     :root {
         --shadow: var(--shadow-sm);
+    }
+}
+
+@media (max-width: 360px) {
+    .content-grid .card {
+        flex: 0 0 260px; /* меньшая ширина на узких экранах */
     }
 }
