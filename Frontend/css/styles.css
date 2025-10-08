@@ -739,18 +739,18 @@ select.form-control {
 
 /* END PERPLEXITY DESIGN SYSTEM */
 :root {
-    /* Telegram Theme Variables - keep for backwards compatibility but map to design system */
-    --tg-bg-color: var(--color-background);
-    --tg-text-color: var(--color-text);
-    --tg-hint-color: var(--color-text-secondary);
-    --tg-button-color: var(--color-primary);
-    --tg-button-text-color: var(--color-btn-primary-text);
-    --tg-secondary-bg-color: var(--color-secondary);
-    --tg-header-bg-color: var(--color-surface);
-    --tg-accent-text-color: var(--color-primary);
-    --tg-section-bg-color: var(--color-surface);
-    --tg-link-color: var(--color-primary);
-    --tg-destructive-text-color: var(--color-error);
+    /* Telegram Theme Variables - keeping for backward compatibility */
+    --tg-bg-color: var(--tg-theme-bg-color, #ffffff);
+    --tg-text-color: var(--tg-theme-text-color, #000000);
+    --tg-hint-color: var(--tg-theme-hint-color, #708499);
+    --tg-button-color: var(--tg-theme-button-color, #0088cc);
+    --tg-button-text-color: var(--tg-theme-button-text-color, #ffffff);
+    --tg-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+    --tg-header-bg-color: var(--tg-theme-header-bg-color, #ffffff);
+    --tg-accent-text-color: var(--tg-theme-accent-text-color, #0088cc);
+    --tg-section-bg-color: var(--tg-theme-section-bg-color, #ffffff);
+    --tg-link-color: var(--tg-theme-link-color, #0088cc);
+    --tg-destructive-text-color: var(--tg-theme-destructive-text-color, #ff3b30);
     
     /* Application variables mapped to design system */
     --primary-color: var(--color-primary);
@@ -762,7 +762,7 @@ select.form-control {
     --card-bg-color: var(--color-surface);
     --header-bg-color: var(--color-surface);
     
-    --shadow: var(--shadow-sm);
+    --shadow: var(--shadow-md);
     --transition: all var(--duration-normal) var(--ease-standard);
     --border-radius: var(--radius-lg);
     --border-radius-large: var(--radius-lg);
@@ -785,9 +785,7 @@ body {
 }
 
 .container {
-    width: 100%;
-    max-width: var(--container-lg);
-    margin: 0 auto;
+    max-width: 100%;
     padding: var(--space-16);
     animation: fadeIn 0.6s var(--ease-standard);
     position: relative;
@@ -825,22 +823,16 @@ body {
     margin-right: var(--space-12);
     transition: var(--transition);
     color: var(--color-text);
-    border: none;
 }
 
 .back-button:hover {
-    background: var(--color-primary-hover);
+    background: var(--color-primary);
     color: var(--color-btn-primary-text);
     transform: scale(1.1);
 }
 
 .back-button:active {
     transform: scale(0.95);
-}
-
-.back-button:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
 }
 
 .page-header h2 {
@@ -905,7 +897,6 @@ body {
     font-size: var(--font-size-lg);
     color: var(--color-text);
     background: transparent;
-    font-family: var(--font-family-base);
 }
 
 .search-bar input::placeholder {
@@ -927,18 +918,13 @@ body {
 }
 
 .filter-btn:hover {
-    background: var(--color-primary-hover);
+    background: var(--color-primary);
     color: var(--color-btn-primary-text);
     transform: scale(1.05);
 }
 
 .filter-btn:active {
     transform: scale(0.95);
-}
-
-.filter-btn:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
 }
 
 /* Content Sections */
@@ -970,11 +956,6 @@ body {
 .section-header:hover {
     background: var(--color-secondary);
     transform: translateY(-var(--space-2));
-}
-
-.section-header:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
 }
 
 .section-header h3 {
@@ -1037,7 +1018,7 @@ body {
     justify-content: center;
     color: var(--color-btn-primary-text);
     font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-4xl);
+    font-size: var(--space-32);
 }
 
 .settings-profile-avatar .avatar-img[src]:not([src=""]) {
@@ -1108,13 +1089,8 @@ body {
     transform: translateY(-var(--space-2));
 }
 
-.category-item:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 .category-item-icon {
-    font-size: var(--font-size-4xl);
+    font-size: var(--space-32);
     margin-bottom: var(--space-8);
     transition: var(--transition);
 }
@@ -1124,7 +1100,7 @@ body {
 }
 
 .category-item-title {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
     color: var(--color-text);
 }
@@ -1184,11 +1160,6 @@ body {
     background-color: var(--color-secondary);
 }
 
-.channel-clickable-area:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 .channel-icon-container {
     display: flex;
     align-items: center;
@@ -1201,7 +1172,7 @@ body {
     border-radius: var(--radius-full);
     object-fit: cover;
     margin-right: var(--space-12);
-    border: 2px solid var(--color-border);
+    border: var(--space-2) solid var(--color-border);
     display: none;
     flex-shrink: 0;
     transition: var(--transition);
@@ -1223,7 +1194,7 @@ body {
     align-items: center;
     justify-content: center;
     margin-right: var(--space-12);
-    border: 2px solid var(--color-border);
+    border: var(--space-2) solid var(--color-border);
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-semibold);
     color: var(--color-btn-primary-text);
@@ -1241,6 +1212,7 @@ body {
     min-width: 0;
 }
 
+/* ОСНОВНЫЕ СТИЛИ ЗАГОЛОВКОВ КАРТОЧЕК - используются везде, включая рекомендации */
 .channel-info h3 {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
@@ -1260,7 +1232,7 @@ body {
 .card p {
     color: var(--color-text-secondary);
     margin-bottom: var(--space-8);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     line-height: 1.4;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1322,11 +1294,6 @@ body {
     transform: translateY(0);
 }
 
-.settings-item:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 .settings-item-icon {
     font-size: var(--font-size-2xl);
     margin-right: var(--space-12);
@@ -1346,7 +1313,7 @@ body {
 }
 
 .settings-item-subtitle {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     color: var(--color-text-secondary);
 }
 
@@ -1372,13 +1339,14 @@ body {
     color: var(--color-text);
 }
 
-/* Recommendations Section - исправляем все баги */
+/* Recommendations Section - ФИКС: убрано переопределение стилей заголовков карточек */
 .recommendations-section {
     padding: 0;
     text-align: left;
 }
 
-.recommendations-section h3 {
+/* Заголовок и подзаголовок секции рекомендаций */
+.recommendations-section > h3 {
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
@@ -1393,18 +1361,22 @@ body {
     text-align: center;
 }
 
-.recommendations-section h4 {
+/* Заголовки подсекций в рекомендациях (Популярные каналы, Полезные боты, и т.д.) */
+.recommendations-section > div > h4 {
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
     margin: var(--space-24) 0 var(--space-16) 0;
 }
 
-.recommendations-section h4:first-of-type {
+.recommendations-section > div:first-of-type > h4 {
     margin-top: 0;
 }
 
-/* ФИКС: Убираем лишние отступы между карточками в рекомендациях */
+/* ВАЖНО: НЕ переопределяем стили .channel-info h3 в рекомендациях! */
+/* Заголовки карточек будут использовать стандартные стили: 16px, рядом с аваткой */
+
+/* Убираем лишние отступы между карточками в рекомендациях */
 .recommendations-section .card {
     margin-bottom: var(--space-12);
 }
@@ -1482,7 +1454,6 @@ body {
     text-align: center;
     position: relative;
     padding: var(--space-8);
-    border: none;
 }
 
 .tab-icon-container {
@@ -1498,7 +1469,7 @@ body {
 }
 
 .bottom-tab span {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1;
     transition: var(--transition);
@@ -1512,17 +1483,12 @@ body {
 
 .bottom-tab:hover:not(.active) {
     color: var(--color-primary);
-    background-color: var(--color-secondary-hover);
+    background-color: rgba(var(--color-teal-500-rgb), 0.05);
     transform: scale(1.02);
 }
 
 .bottom-tab:active {
     transform: scale(0.98);
-}
-
-.bottom-tab:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
 }
 
 /* Анимации для иконок - более плавные */
@@ -1576,7 +1542,7 @@ body {
     justify-content: center;
     opacity: 0;
     transition: opacity 0.5s var(--ease-standard);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(var(--space-4));
 }
 
 .filter-modal.show {
@@ -1647,11 +1613,6 @@ body {
     transform: scale(0.95);
 }
 
-.filter-modal-close:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 .filter-section {
     margin-bottom: var(--space-24);
 }
@@ -1687,7 +1648,7 @@ body {
     background: var(--color-secondary);
     color: var(--color-text);
     border-radius: var(--space-20);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
     transition: var(--transition);
     border: 1px solid var(--color-border);
@@ -1722,13 +1683,8 @@ body {
 }
 
 .filter-category-item:hover {
-    background: var(--color-secondary-hover);
+    background: rgba(var(--color-teal-500-rgb), 0.1);
     transform: translateX(var(--space-4));
-}
-
-.filter-category-item:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
 }
 
 .filter-category-item.selected {
@@ -1801,18 +1757,13 @@ body {
     transform: translateX(var(--space-4));
 }
 
-.filter-subcategory-item:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 .filter-subcategory-item.selected {
     background: var(--color-primary);
     color: var(--color-btn-primary-text);
 }
 
 .filter-subcategory-item span {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     color: var(--color-text);
 }
 
@@ -1829,14 +1780,13 @@ body {
 .filter-reset-btn,
 .filter-apply-btn {
     flex: 1;
-    padding: var(--space-12) var(--space-20);
+    padding: var(--space-16) var(--space-20);
     border-radius: var(--radius-lg);
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: var(--transition);
     border: none;
-    font-family: var(--font-family-base);
 }
 
 .filter-reset-btn {
@@ -1849,11 +1799,6 @@ body {
     transform: scale(1.02);
 }
 
-.filter-reset-btn:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 .filter-apply-btn {
     background: var(--color-primary);
     color: var(--color-btn-primary-text);
@@ -1862,11 +1807,6 @@ body {
 .filter-apply-btn:hover {
     background: var(--color-primary-hover);
     transform: scale(1.02);
-}
-
-.filter-apply-btn:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
 }
 
 .filter-apply-btn:active,
@@ -1888,8 +1828,8 @@ body {
     width: var(--space-20);
     height: var(--space-20);
     margin-left: var(--space-10);
-    border: 2px solid var(--color-text-secondary);
-    border-top: 2px solid var(--color-primary);
+    border: var(--space-2) solid var(--color-text-secondary);
+    border-top: var(--space-2) solid var(--color-primary);
     border-radius: var(--radius-full);
     animation: loading-spin 1s linear infinite;
 }
@@ -1927,7 +1867,6 @@ body {
 }
 
 .to-top-btn:hover {
-    background: var(--color-primary-hover);
     transform: translateY(-var(--space-4)) scale(1.1);
     box-shadow: var(--shadow-lg);
 }
@@ -1936,17 +1875,12 @@ body {
     transform: translateY(-var(--space-2)) scale(1.05);
 }
 
-.to-top-btn:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--space-2);
-}
-
 /* Infinite Scroll Loading */
 .scroll-loading {
     text-align: center;
     padding: var(--space-20);
     color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
 }
 
 .scroll-loading::after {
@@ -1955,15 +1889,15 @@ body {
     width: var(--space-16);
     height: var(--space-16);
     margin-left: var(--space-8);
-    border: 2px solid var(--color-text-secondary);
-    border-top: 2px solid var(--color-primary);
+    border: var(--space-2) solid var(--color-text-secondary);
+    border-top: var(--space-2) solid var(--color-primary);
     border-radius: var(--radius-full);
     animation: loading-spin 1s linear infinite;
 }
 
 /* Premium Card */
 .premium-card {
-    border: 2px solid var(--color-primary);
+    border: var(--space-2) solid var(--color-primary);
     background: linear-gradient(135deg, rgba(var(--color-teal-500-rgb), 0.1) 0%, rgba(var(--color-teal-500-rgb), 0.05) 100%);
 }
 
@@ -1975,7 +1909,7 @@ body {
     color: var(--color-btn-primary-text);
     padding: var(--space-4) var(--space-8);
     border-radius: var(--radius-lg);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
 }
 
@@ -2000,16 +1934,16 @@ body {
     }
     
     .settings-profile-section {
-        padding: var(--space-24) var(--space-16);
+        padding: var(--space-32) var(--space-16);
         margin: calc(-1 * var(--space-12)) calc(-1 * var(--space-12)) var(--space-20) calc(-1 * var(--space-12));
     }
     
     .search-bar {
-        padding: var(--space-10) var(--space-12);
+        padding: var(--space-10) var(--space-16);
     }
     
     .card {
-        padding: var(--space-12);
+        padding: var(--space-16);
     }
     
     .bottom-tabs {
@@ -2026,17 +1960,41 @@ body {
         font-size: var(--font-size-xl);
     }
     
-    .settings-profile-name .profile-name {
-        font-size: var(--font-size-2xl);
+    .section-header h3 {
+        font-size: var(--font-size-xl);
+    }
+    
+    .category-item {
+        padding: var(--space-16) var(--space-12);
+    }
+    
+    .settings-item {
+        padding: var(--space-12);
     }
     
     .filter-modal-content {
-        padding: var(--space-16);
+        padding: var(--space-20);
     }
     
-    .categories-section h3,
-    .settings-section h3,
-    .recommendations-section h3 {
-        font-size: var(--font-size-xl);
+    .bottom-tab {
+        height: 48px;
+        padding: var(--space-6);
+    }
+    
+    .tab-icon-container,
+    .tab-icon {
+        width: var(--space-20);
+        height: var(--space-20);
+    }
+    
+    .bottom-tab span {
+        font-size: var(--font-size-xs);
+    }
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --shadow: var(--shadow-sm);
     }
 }
