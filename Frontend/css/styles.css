@@ -1415,24 +1415,26 @@ body {
     margin-bottom: 0;
 }
 
-/* Bottom Tabs */
+/* Bottom Navigation - ИСПРАВЛЕНО: от края до края, без закруглений, только цветовой акцент */
 .bottom-tabs {
     position: fixed;
-    bottom: var(--space-8);
-    left: var(--space-8);
-    right: var(--space-8);
-    max-width: 500px;
-    margin: 0 auto;
+    bottom: 0 /* var(--space-12)*/ ; /* ФИКС: приподнято от нижнего края */
+    left: 0;
+    right: 0;
+    max-width: none; /* ФИКС: убрали ограничение ширины - от края до края */
+    margin: 0; /* ФИКС: убрали автоматические отступы */
     display: flex;
     justify-content: space-around;
     align-items: center;
     background-color: var(--color-surface);
     box-shadow: var(--shadow-lg);
-    border-radius: var(--space-24);
-    padding: var(--space-8);
+    border-radius: 0; /* ФИКС: убрали все закругления */
+    padding: var(--space-8) 0; /* ФИКС: убрали боковые отступы */
     box-sizing: border-box;
     z-index: 1000;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-card-border);
+    border-left: none; /* ФИКС: убираем боковые границы */
+    border-right: none; /* ФИКС: убираем боковые границы */
     backdrop-filter: blur(20px);
 }
 
@@ -1445,15 +1447,85 @@ body {
     justify-content: center;
     gap: var(--space-4);
     cursor: pointer;
-    color: var(--color-text-secondary);
-    border-radius: var(--space-16);
-    background-color: transparent;
-    transition: var(--transition);
-    margin: 0 var(--space-4);
+    color: var(--color-text-secondary); /* Неактивные вкладки - серые */
+    border-radius: 0; /* ФИКС: убрали закругления кнопок */
+    background-color: transparent; /* ФИКС: всегда прозрачный фон */
+    transition: all var(--duration-normal) var(--ease-standard);
+    margin: 0; /* ФИКС: убрали отступы между кнопками */
     user-select: none;
     text-align: center;
     position: relative;
     padding: var(--space-8);
+}
+
+.tab-icon-container {
+    position: relative;
+    width: var(--space-24);
+    height: var(--space-24);
+}
+
+.tab-icon {
+    width: var(--space-24);
+    height: var(--space-24);
+    transition: all var(--duration-normal) var(--ease-standard);
+}
+
+.bottom-tab span {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    transition: all var(--duration-normal) var(--ease-standard);
+}
+
+/* ФИКС: Активная вкладка - только цветовой акцент, без смены фона */
+.bottom-tab.active {
+    color: var(--color-primary); /* ФИКС: активная - синяя */
+    background-color: transparent; /* ФИКС: фон остается прозрачным */
+    transform: none; /* ФИКС: убрали масштабирование */
+}
+
+/* ФИКС: Hover эффект - только цветовой, без фона */
+.bottom-tab:hover:not(.active) {
+    color: var(--color-primary);
+    background-color: transparent; /* ФИКС: фон остается прозрачным */
+    transform: none; /* ФИКС: убрали масштабирование */
+}
+
+.bottom-tab:active {
+    transform: scale(0.98); /* Только легкое нажатие */
+}
+
+.bottom-tab:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: 2px;
+}
+
+/* Mobile responsive styles for portrait orientation */
+@media (max-width: 480px) {
+    .bottom-tabs {
+        bottom: var(--space-8);
+        padding: var(--space-6) 0;
+    }
+    
+    .bottom-tab {
+        height: 48px;
+        gap: var(--space-2);
+        padding: var(--space-6);
+    }
+    
+    .tab-icon-container {
+        width: var(--space-20);
+        height: var(--space-20);
+    }
+    
+    .tab-icon {
+        width: var(--space-20);
+        height: var(--space-20);
+    }
+    
+    .bottom-tab span {
+        font-size: var(--font-size-xs);
+    }
 }
 
 .tab-icon-container {
@@ -1477,7 +1549,7 @@ body {
 
 .bottom-tab.active {
     color: var(--color-primary);
-    background-color: var(--color-secondary);
+    /* background-color: var(--color-secondary); */
     transform: scale(1.05);
 }
 

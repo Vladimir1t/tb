@@ -327,7 +327,7 @@ function goBackToSearch() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Основная функция загрузки проектов с поиском и фильтром
+// ФИКС: Основная функция загрузки проектов с правильным бесконечным скроллом
 async function loadProjects(contentType = 'all', append = false) {
     if (loading || (!hasMore && append)) return;
     loading = true;
@@ -429,6 +429,11 @@ async function loadProjects(contentType = 'all', append = false) {
         // Показываем вкладку результатов
         showResultsTab();
         
+        // ФИКС: Добавляем бесконечный скролл для результатов поиска
+        if (hasMore && !append) {
+            addInfiniteScrollForResults();
+        }
+        
     } catch (error) {
         console.error('Ошибка загрузки:', error);
         if (page === 0) {
@@ -437,6 +442,29 @@ async function loadProjects(contentType = 'all', append = false) {
     } finally {
         loading = false;
     }
+}
+
+// ФИКС: Добавляем бесконечный скролл для результатов поиска
+function addInfiniteScrollForResults() {
+    const handleResultsScroll = () => {
+        if (loading || !hasMore) return;
+
+        const scrollTop = window.pageYOffset;
+        const windowHeight = window.innerHeight;
+        const docHeight = document.documentElement.scrollHeight;
+
+        // Загружаем больше контента когда пользователь почти доходит до конца
+        if (scrollTop + windowHeight >= docHeight - 1000) {
+            loadProjects(currentContentType, true);
+        }
+    };
+
+    // Удаляем предыдущий обработчик если есть
+    window.removeEventListener('scroll', window.resultsScrollHandler);
+    
+    // Добавляем новый обработчик
+    window.resultsScrollHandler = handleResultsScroll;
+    window.addEventListener('scroll', handleResultsScroll);
 }
 
 // Загрузка рекомендаций
@@ -529,10 +557,14 @@ function loadCategories() {
             currentFilter = category.value;
             currentSubcategory = null; // Сбрасываем подкатегорию при выборе основной категории
             
+            // ФИКС: Полностью сбрасываем данные при смене категории
+            page = 0;
+            hasMore = true;
+            categoryPage = 0;
+            categoryHasMore = true;
+            
             // Если мы на странице категории, обновляем её
             if (isInCategoryPage) {
-                categoryPage = 0;
-                categoryHasMore = true;
                 loadCategoryContent();
             } else {
                 // Иначе загружаем результаты поиска
@@ -544,7 +576,7 @@ function loadCategories() {
     });
 }
 
-// Создание карточки проекта с исправленным отображением подписчиков
+// ФИКС: Создание карточки проекта без подписчиков для ботов
 function createProjectCard(project) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -567,8 +599,12 @@ function createProjectCard(project) {
     const projectDescription = project.description || project.theme || 'Описание недоступно';
     const projectUrl = project.url || project.link || '#';
     
-    // Поддерживаем разные поля для количества подписчиков
+    // ФИКС: Поддерживаем разные поля для количества подписчиков и убираем для ботов
     const subscribersCount = project.subscribers || project.subscribers_count || project.likes || 0;
+    const projectType = project.type || (project.url && project.url.includes('t.me/') && !project.url.includes('_bot') ? 'channel' : 'bot');
+    
+    // ФИКС: Показываем подписчиков только для каналов, не для ботов
+    const showSubscribers = projectType === 'channel' || project.type === 'channel';
 
     card.innerHTML = `
         ${project.is_premium ? '<div class="premium-badge">Premium</div>' : ''}
@@ -582,9 +618,11 @@ function createProjectCard(project) {
                     </div>
                 </div>
             </a>
+            ${showSubscribers ? `
             <div class="subscribers-mini">
                 <span class="subscribers-badge">👥 ${formatNumber(subscribersCount)}</span>
             </div>
+            ` : ''}
         </div>
     `;
 
@@ -637,6 +675,9 @@ function showResultsTab() {
     });
     document.getElementById('results-tab').classList.add('active');
     document.getElementById('results-tab').style.display = 'block';
+    
+    // Убираем обработчик скролла категорий
+    window.removeEventListener('scroll', window.categoryScrollHandler);
 }
 
 // Показать основную вкладку
@@ -646,6 +687,12 @@ function showMainTab() {
     });
     document.getElementById('search-tab').classList.add('active');
     document.getElementById('results-tab').style.display = 'none';
+    
+    // Убираем обработчик скролла результатов
+    window.removeEventListener('scroll', window.resultsScrollHandler);
+    
+    // ФИКС: Перезагружаем категории при возврате на главную
+    loadCategories();
 }
 
 // Инициализация вкладок
@@ -720,9 +767,14 @@ function debounce(func, wait) {
     };
 }
 
-// Обработка поиска
+// ФИКС: Обработка поиска с закрытием клавиатуры
 const debouncedSearch = debounce(() => {
     const query = searchInput?.value?.trim() || '';
+    
+    // ФИКС: Закрываем клавиатуру после ввода
+    if (searchInput) {
+        searchInput.blur();
+    }
     
     if (isInCategoryPage) {
         // Если мы на странице категории, перезагружаем её с учетом поиска
@@ -768,6 +820,7 @@ function handleFilterClose() {
     }
 }
 
+// ФИКС: Сброс фильтров с полной очисткой кэша
 function handleFilterReset() {
     // Сбрасываем все фильтры
     currentFilter = 'все';
@@ -776,6 +829,12 @@ function handleFilterReset() {
     }
     currentSortBy = 'subscribers';
     currentSubcategory = null;
+    
+    // ФИКС: Полностью сбрасываем пагинацию
+    page = 0;
+    hasMore = true;
+    categoryPage = 0;
+    categoryHasMore = true;
     
     // Сбрасываем UI
     if (!isInCategoryPage) {
@@ -817,13 +876,17 @@ function handleFilterApply() {
         currentSubcategory = null;
     }
     
+    // ФИКС: Полностью сбрасываем пагинацию при применении фильтров
+    page = 0;
+    hasMore = true;
+    categoryPage = 0;
+    categoryHasMore = true;
+    
     // Закрываем модал
     handleFilterClose();
     
     // Применяем фильтры
     if (isInCategoryPage) {
-        categoryPage = 0;
-        categoryHasMore = true;
         loadCategoryContent();
     } else {
         loadProjects(currentContentType);
@@ -974,6 +1037,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Обработчики событий
     if (searchInput) {
         searchInput.addEventListener('input', debouncedSearch);
+        
+        // ФИКС: Закрываем клавиатуру при нажатии Enter
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchInput.blur();
+                debouncedSearch();
+            }
+        });
     }
     
     if (filterBtn) {
