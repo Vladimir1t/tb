@@ -983,12 +983,15 @@ body {
     overflow-x: auto; /* горизонтальный скролл */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch; /* плавный свайп на iOS */
+    gap: 16px; /* четкие отступы между карточками */
+    padding: 0 16px 8px 16px; /* отступы от краев экрана */
 }
 
 .content-grid .card {
     flex: 0 0 280px; /* фиксированная ширина 280px */
     min-width: 280px; /* не сжимается */
     max-width: 280px; /* не растягивается */
+    margin: 0; /* убрали все margin, которые могли склеивать */
 }
 
 /* Settings Profile Section */
