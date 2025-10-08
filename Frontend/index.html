@@ -3,63 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Aggregator</title>
+    <title>Telegram Catalog</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h2 class="main-title">Telegram Catalog</h2>
-            <p class="main-subtitle">Найдите лучшие каналы, боты и мини-приложения</p>
+        <!-- Заголовок с навигацией назад -->
+        <div class="page-header" id="pageHeader" style="display: none;">
+            <div class="back-button" id="backButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H6m6-7-7 7 7 7"/>
+                </svg>
+            </div>
+            <h2 id="pageTitle">Поиск</h2>
         </div>
 
-        <div class="search-container">
+        <!-- Поисковая строка в верхней части (только для поиска и рекомендаций) -->
+        <div class="search-container" id="searchContainer">
             <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Поиск..." />
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Поиск каналов, ботов, приложений..." />
             </div>
-            <button class="filter-btn" id="filterBtn">Фильтр ▼</button>
+            <button class="filter-btn" id="filterBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" x2="4" y1="21" y2="14"></line>
+                    <line x1="4" x2="4" y1="10" y2="3"></line>
+                    <line x1="12" x2="12" y1="21" y2="12"></line>
+                    <line x1="12" x2="12" y1="8" y2="3"></line>
+                    <line x1="20" x2="20" y1="21" y2="16"></line>
+                    <line x1="20" x2="20" y1="12" y2="3"></line>
+                    <line x1="1" x2="7" y1="14" y2="14"></line>
+                    <line x1="9" x2="15" y1="8" y2="8"></line>
+                    <line x1="17" x2="23" y1="16" y2="16"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Контент вкладок -->
+        <div class="tab-content active" id="search-tab">
+            <!-- Блоки контента -->
+            <div class="content-sections">
+                <div class="content-section" id="channels-section">
+                    <div class="section-header" data-type="channel">
+                        <h3>📺 Каналы</h3>
+                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="content-grid" id="channelsContent">
+                        <div class="loading">Загрузка каналов...</div>
+                    </div>
+                </div>
+
+                <div class="content-section" id="bots-section">
+                    <div class="section-header" data-type="bot">
+                        <h3>🤖 Боты</h3>
+                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="content-grid" id="botsContent">
+                        <div class="loading">Загрузка ботов...</div>
+                    </div>
+                </div>
+
+                <div class="content-section" id="apps-section">
+                    <div class="section-header" data-type="mini_app">
+                        <h3>📱 Мини-приложения</h3>
+                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="content-grid" id="appsContent">
+                        <div class="loading">Загрузка приложений...</div>
+                    </div>
+                </div>
+            </div>
             
-            <div class="filter-dropdown" id="filterDropdown">
-                <a href="#" class="filter-option active" data-theme="все">Все категории</a>
-                <a href="#" class="filter-option" data-theme="Спорт">Спорт</a>
-                <a href="#" class="filter-option" data-theme="Новости">Новости</a>
-                <a href="#" class="filter-option" data-theme="Наука">Наука</a>
-                <a href="#" class="filter-option" data-theme="Искусство">Искусство</a>
-                <a href="#" class="filter-option" data-theme="Бизнес">Бизнес</a>
-                <a href="#" class="filter-option" data-theme="Путешествия">Путешествия</a>
-                <a href="#" class="filter-option" data-theme="Блоги">Блоги</a>
-                <a href="#" class="filter-option" data-theme="Бьюти">Бьюти</a>
+            <div class="categories-section">
+                <h3>Категории</h3>
+                <div class="categories-grid" id="categoriesGrid"></div>
             </div>
         </div>
- 
-        <div id="channels-tab" class="tab-content active">
-            <div class="loading">Идет поиск каналов...</div>
+
+        <div class="tab-content" id="recommendations-tab">
+            <div class="recommendations-section">
+                <h3>Персональные рекомендации</h3>
+                <p class="recommendations-subtitle">На основе ваших интересов</p>
+                <div id="recommendationsContent">
+                    <div class="loading">Подбираем рекомендации...</div>
+                </div>
+            </div>
         </div>
 
-        <div id="bots-tab" class="tab-content">
-            <div class="loading">Идет поиск ботов...</div>
+        <div class="tab-content" id="settings-tab">
+            <!-- Профиль пользователя -->
+            <div class="settings-profile-section">
+                <div class="settings-profile-avatar">
+                    <img id="userAvatar" src="" alt="Avatar" class="avatar-img">
+                    <div id="userInitials" class="avatar-initials"></div>
+                </div>
+                <div class="settings-profile-name">
+                    <h2 id="userName" class="profile-name">Пользователь</h2>
+                </div>
+            </div>
+
+            <!-- Настройки -->
+            <div class="settings-section">
+                <div class="settings-item" onclick="handleSettingsClick('notifications')">
+                    <div class="settings-item-icon">🔔</div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Уведомления</div>
+                        <div class="settings-item-subtitle">Настройка push-уведомлений</div>
+                    </div>
+                    <div class="settings-item-arrow">›</div>
+                </div>
+                
+                <div class="settings-item" onclick="handleSettingsClick('theme')">
+                    <div class="settings-item-icon">🌙</div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Тема оформления</div>
+                        <div class="settings-item-subtitle">Светлая/темная тема</div>
+                    </div>
+                    <div class="settings-item-arrow">›</div>
+                </div>
+                
+                <div class="settings-item" onclick="handleSettingsClick('language')">
+                    <div class="settings-item-icon">🌐</div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Язык интерфейса</div>
+                        <div class="settings-item-subtitle">Русский</div>
+                    </div>
+                    <div class="settings-item-arrow">›</div>
+                </div>
+            </div>
+
+            <!-- Справка и поддержка -->
+            <div class="help-section">
+                <h3>Справка и поддержка</h3>
+                <div class="settings-item" onclick="handleSettingsClick('support')">
+                    <div class="settings-item-icon">🤖</div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Бот поддержки</div>
+                        <div class="settings-item-subtitle">Связаться с поддержкой</div>
+                    </div>
+                    <div class="settings-item-arrow">›</div>
+                </div>
+                
+                <div class="settings-item" onclick="handleSettingsClick('faq')">
+                    <div class="settings-item-icon">❓</div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">FAQ</div>
+                        <div class="settings-item-subtitle">Часто задаваемые вопросы</div>
+                    </div>
+                    <div class="settings-item-arrow">›</div>
+                </div>
+                
+                <div class="settings-item" onclick="handleSettingsClick('privacy')">
+                    <div class="settings-item-icon">📝</div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Политика конфиденциальности</div>
+                        <div class="settings-item-subtitle">Условия использования</div>
+                    </div>
+                    <div class="settings-item-arrow">›</div>
+                </div>
+            </div>
         </div>
 
-        <div id="apps-tab" class="tab-content">
-            <div class="loading">Идет поиск приложений...</div>
+        <!-- Страница категории с бесконечной подгрузкой -->
+        <div class="tab-content" id="category-tab" style="display: none;">
+            <div id="categoryContent">
+                <!-- Контент будет добавлен через JavaScript -->
+            </div>
         </div>
 
-        <div id="help-section" class="help-section">
-            <h3>Справка и поддержка</h3>
-            <a href="https://t.me/requestsaggregator_bot" class="btn help-btn">Бот поддержки</a>
-            <a href="https://t.me/aggregator_support" class="btn help-btn">FAQ</a>
+        <!-- Результаты поиска/фильтрации -->
+        <div class="tab-content" id="results-tab" style="display: none;">
+            <div id="resultsContent"></div>
         </div>
     </div>
 
+    <!-- Нижние вкладки -->
     <div class="bottom-tabs">
-        <div class="tab-indicator"></div> <!-- НОВЫЙ ЭЛЕМЕНТ -->
-        <div class="bottom-tab active" data-tab="channels">Каналы</div>
-        <div class="bottom-tab" data-tab="bots">Боты</div>
-        <div class="bottom-tab" data-tab="apps">Мини-<br>приложения</div>
+        <div class="bottom-tab active" data-tab="search">
+            <div class="tab-icon-container">
+                <svg class="tab-icon compass-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/>
+                </svg>
+            </div>
+            <span>Поиск</span>
+        </div>
+        <div class="bottom-tab" data-tab="recommendations">
+            <div class="tab-icon-container">
+                <svg class="tab-icon checkmark-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 6 9 17l-5-5"/>
+                </svg>
+            </div>
+            <span>Рекомендации</span>
+        </div>
+        <div class="bottom-tab" data-tab="settings">
+            <div class="tab-icon-container">
+                <svg class="tab-icon settings-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </div>
+            <span>Настройки</span>
+        </div>
     </div>
 
-    <button id="toTopBtn" class="to-top-btn">↑</button>
+    <!-- Модальное окно фильтра -->
+    <div class="filter-modal" id="filterModal">
+        <div class="filter-modal-content">
+            <div class="filter-modal-header">
+                <h3>Фильтры</h3>
+                <button class="filter-modal-close" id="filterModalClose">×</button>
+            </div>
+            
+            <div class="filter-section">
+                <h4>Тип контента</h4>
+                <div class="filter-chips">
+                    <label class="filter-chip">
+                        <input type="radio" name="contentType" value="all" checked>
+                        <span>Все</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="contentType" value="channel">
+                        <span>Каналы</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="contentType" value="bot">
+                        <span>Боты</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="contentType" value="mini_app">
+                        <span>Мини-приложения</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4>Сортировка</h4>
+                <div class="filter-chips">
+                    <label class="filter-chip">
+                        <input type="radio" name="sortBy" value="subscribers" checked>
+                        <span>По подписчикам</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="sortBy" value="rating">
+                        <span>По рейтингу</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="sortBy" value="date">
+                        <span>По дате</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4>Категория</h4>
+                <div class="filter-categories" id="filterCategories">
+                    <!-- Категории будут добавлены через JavaScript -->
+                </div>
+            </div>
+            
+            <div class="filter-modal-actions">
+                <button class="filter-reset-btn" id="filterResetBtn">Сброс</button>
+                <button class="filter-apply-btn" id="filterApplyBtn">Применить</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="to-top-btn" id="toTopBtn">↑</button>
 
     <script src="js/main.js"></script>
 </body>

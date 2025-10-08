@@ -1,585 +1,1039 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
+// Инициализация темы и пользователя
+initializeTelegramTheme();
+initializeUserProfile();
+
 const API_URL = 'https://tcatalogbot.ru/api';
-// 'http://localhost:8000';
 let searchTimeout;
 let currentFilter = 'все';
+let currentContentType = 'all';
+let currentSortBy = 'subscribers';
+let currentSubcategory = null;
 let page = 0;
 let hasMore = true;
 let loading = false;
+let currentCategoryType = null;
+let categoryPage = 0;
+let categoryHasMore = true;
+let categoryLoading = false;
+let isInCategoryPage = false;
 
-const bottomTabs = document.querySelectorAll('.bottom-tab');
 const toTopBtn = document.getElementById('toTopBtn');
 const searchInput = document.getElementById('searchInput');
+const searchContainer = document.getElementById('searchContainer');
 const filterBtn = document.getElementById('filterBtn');
-const filterDropdown = document.getElementById('filterDropdown');
-const filterOptions = document.querySelectorAll('.filter-option');
+const filterModal = document.getElementById('filterModal');
+const filterModalClose = document.getElementById('filterModalClose');
+const filterResetBtn = document.getElementById('filterResetBtn');
+const filterApplyBtn = document.getElementById('filterApplyBtn');
+const pageHeader = document.getElementById('pageHeader');
+const pageTitle = document.getElementById('pageTitle');
+const backButton = document.getElementById('backButton');
 
-// Основная функция загрузки проектов с поиском и фильтром
-async function loadProjects(tabName, append = false) {
-    if (loading || !hasMore) return;
-    loading = true;
-
-    const typeMap = { 'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app' };
-    const apiType = typeMap[tabName];
-    const tabContent = document.getElementById(`${tabName}-tab`);
-
-    // if (!append) {
-    //    tabContent.innerHTML = '<div class="loading">Идёт поиск каналов...</div>';
-    //    page = 0;
-    //    hasMore = true;
-    // }
-
-    if (!append) {
-    showLoadingIndicator(tabContent, tabName);
-    page = 0;
-    hasMore = true;
-}
-
-    const query = searchInput.value.trim(); // текст поиска
-    const themeFilter = currentFilter === 'все' ? '' : currentFilter; // фильтр в нижнем регистре
-
-    console.log("Текущий фильтр (currentFilter):", currentFilter);
-    console.log("Тип API (apiType):", apiType);
-    console.log("Поисковый запрос (query):", query);
-    console.log("Фильтр по теме (themeFilter):", themeFilter);
-
-    try {
-        // Если поиск пустой, показываем дефолтные 10 каналов
-        const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
-
-        const response = await fetch(
-        `${API_URL}/projects/?type=${apiType}&theme=${encodeURIComponent(themeFilter)}${searchParam}&limit=10&offset=${page*10}`
-        );
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const projects = await response.json();
-        console.log(`Ответ сервера для фильтра "${currentFilter}" (тип: ${apiType}):`, projects); // <-- Добавлено логирование
-
-        // Проверяем, не изменился ли поисковый запрос пока шёл запрос
-        const currentQuery = searchInput.value.trim();
-        if (currentQuery !== query) {
-            loading = false;
-            return;
-        }
-
-        if (projects.length === 0) {
-            hasMore = false;
-            if (!append) {
-                if (!query && !themeFilter) {
-                    const defaultResponse = await fetch(`${API_URL}/projects/?type=${apiType}&limit=10&offset=0`);
-                    const defaultProjects = await defaultResponse.json();
-                    
-                    if (searchInput.value.trim() !== query) {
-                        loading = false;
-                        return;
-                    }
-                    
-                    let defaultHtml = '';
-                    defaultProjects.forEach(project => {
-                        const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-                        const iconUrl = project.icon || 'https://via.placeholder.com/48';
-                        defaultHtml += `
-                            <div class="card" data-theme="${project.theme.toLowerCase()}">
-                                <div class="card-content">
-                                    <a href="${project.link}" class="channel-clickable-area" target="_blank" rel="noopener noreferrer">
-                                        ${project.icon ? 
-                                            `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-                                            ''
-                                        }
-                                        <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
-                                            ${project.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div class="channel-info">
-                                            <h3>${project.name}</h3>
-                                            <div class="theme-badge">${project.theme}</div>
-                                        </div>
-                                    </a>
-                                    <div class="subscribers-mini">
-                                        ${tabName === 'channels' ? `
-                                            <span class="subscribers-badge">
-                                                ${formatSubscribers(project.subscribers)} подписчиков
-                                            </span>
-                                        ` : ''}
-                                        <span class="likes-badge">
-                                            <svg class="likes-icon-inline" viewBox="0 0 24 24">
-                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                            </svg>
-                                            <span class="likes-count">${project.likes || 0}</span>
-                                        </span>
-                                    </div>
-                                    <div class="actions">
-                                        <button class="like-btn" data-project-id="${projectId}" aria-label="Поставить лайк">
-                                            <svg class="like-icon" viewBox="0 0 24 24">
-                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    tabContent.innerHTML = defaultHtml;
-                    // Обработчик для кнопки лайка с анимацией
-                    tabContent.querySelectorAll('.like-btn').forEach(btn => {
-                        btn.onclick = (event) => {
-                            event.stopPropagation();
-                            
-                            // Добавляем класс анимации
-                            btn.classList.add('clicked');
-                            // Убираем класс через 400 мс (длительность анимации)
-                            setTimeout(() => {
-                                btn.classList.remove('clicked');
-                            }, 400);
-                            
-                            handleLike(btn.dataset.projectId, btn);
-                        };
-                    });
-        
-                    // Обработчик для плашки с количеством лайков
-                    tabContent.querySelectorAll('.likes-badge').forEach(badge => {
-                        badge.onclick = (event) => {
-                            // Находим соответствующую кнопку лайка в этой карточке
-                            const card = event.currentTarget.closest('.card');
-                            const likeBtn = card.querySelector('.like-btn');
-                            if (likeBtn) {
-                                // Добавляем класс clicked для запуска анимации
-                                badge.classList.add('clicked');
-                                // Убираем класс через 300 мс после завершения анимации
-                                setTimeout(() => {
-                                    badge.classList.remove('clicked');
-                                }, 300);
-        
-                                // Вызываем функцию handleLike
-                                handleLike(likeBtn.dataset.projectId, likeBtn);
-                            }
-                        };
-                    });
-                    page = 1;
-                    hasMore = defaultProjects.length === 10;
-                } else {
-                    // Показываем "Ничего не найдено" только если запрос всё ещё актуален
-                    if (searchInput.value.trim() === query) {
-                        tabContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
-                    }
-                }
-            }
-            loading = false;
-            return;
-        }
-        
-        let html = '';
-        projects.forEach(project => {
-            const projectId = `${tabName}-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
-            const iconUrl = project.icon || 'https://via.placeholder.com/48';
-            html += `
-                <div class="card" data-theme="${project.theme.toLowerCase()}">
-                    <div class="card-content">
-                        <a href="${project.link}" class="channel-clickable-area" target="_blank" rel="noopener noreferrer">
-                            ${project.icon ? 
-                                `<img src="${project.icon}" class="channel-icon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-                                ''
-                            }
-                            <div class="channel-letter-badge" ${project.icon ? 'style="display:none;"' : ''}>
-                                ${project.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div class="channel-info">
-                                <h3>${project.name}</h3>
-                                <div class="theme-badge">${project.theme}</div>
-                            </div>
-                        </a>
-                        <div class="subscribers-mini">
-                            ${tabName === 'channels' ? `
-                                <span class="subscribers-badge">
-                                    ${formatSubscribers(project.subscribers)} подписчиков
-                                </span>
-                            ` : ''}
-                            <span class="likes-badge">
-                                <svg class="likes-icon-inline" viewBox="0 0 24 24">
-                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                </svg>
-                                <span class="likes-count">${project.likes || 0}</span>
-                            </span>
-                        </div>
-                        <div class="actions">
-                            <button class="like-btn" data-project-id="${projectId}" aria-label="Поставить лайк">
-                                <svg class="like-icon" viewBox="0 0 24 24">
-                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        if (searchInput.value.trim() !== query) {
-            loading = false;
-            return;
-        }
-
-        // Обработчик для кнопки лайка с анимацией
-        tabContent.querySelectorAll('.like-btn').forEach(btn => {
-            btn.onclick = (event) => {
-                event.stopPropagation();
-                
-                // Добавляем класс анимации
-                btn.classList.add('clicked');
-                // Убираем класс через 400 мс (длительность анимации)
-                setTimeout(() => {
-                    btn.classList.remove('clicked');
-                }, 400);
-                
-                handleLike(btn.dataset.projectId, btn);
-            };
-        });
-
-        // Обработчик для плашки с количеством лайков
-        tabContent.querySelectorAll('.likes-badge').forEach(badge => {
-            badge.onclick = (event) => {
-                // Находим соответствующую кнопку лайка в этой карточке
-                const card = event.currentTarget.closest('.card');
-                const likeBtn = card.querySelector('.like-btn');
-                if (likeBtn) {
-                    // Добавляем класс clicked для запуска анимации
-                    badge.classList.add('clicked');
-                    // Убираем класс через 300 мс после завершения анимации
-                    setTimeout(() => {
-                        badge.classList.remove('clicked');
-                    }, 300);
-
-                    // Вызываем функцию handleLike
-                    handleLike(likeBtn.dataset.projectId, likeBtn);
-                }
-            };
-        });
-
-        if (append) {
-            tabContent.insertAdjacentHTML('beforeend', html);
-        } else {
-            tabContent.innerHTML = html;
-        }
-        const loadingElements = tabContent.querySelectorAll('.loading');
-        loadingElements.forEach(el => el.remove());
-        // Обработчик для кнопки лайка с анимацией
-        tabContent.querySelectorAll('.like-btn').forEach(btn => {
-            btn.onclick = (event) => {
-                event.stopPropagation();
-                
-                // Добавляем класс анимации
-                btn.classList.add('clicked');
-                // Убираем класс через 400 мс (длительность анимации)
-                setTimeout(() => {
-                    btn.classList.remove('clicked');
-                }, 400);
-                
-                handleLike(btn.dataset.projectId, btn);
-            };
-        });
-
-        // Обработчик для плашки с количеством лайков
-        tabContent.querySelectorAll('.likes-badge').forEach(badge => {
-            badge.onclick = (event) => {
-                // Находим соответствующую кнопку лайка в этой карточке
-                const card = event.currentTarget.closest('.card');
-                const likeBtn = card.querySelector('.like-btn');
-                if (likeBtn) {
-                    // Добавляем класс clicked для запуска анимации
-                    badge.classList.add('clicked');
-                    // Убираем класс через 300 мс после завершения анимации
-                    setTimeout(() => {
-                        badge.classList.remove('clicked');
-                    }, 300);  
-                    // Вызываем функцию handleLike
-                    handleLike(likeBtn.dataset.projectId, likeBtn);
-                }
-            };
-        });
-
-        page++;
-        hasMore = projects.length === 10;
-    } catch (err) {
-        console.error('Ошибка:', err);
-        if (!append && searchInput.value.trim() === query) {
-            tabContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
-        }
+// Данные категорий и подкатегорий
+const categoriesData = {
+    'все': {
+        name: 'Все категории',
+        subcategories: []
+    },
+    'новости': {
+        name: 'Новости',
+        subcategories: ['Политика', 'Экономика', 'Мировые новости', 'Происшествия']
+    },
+    'спорт': {
+        name: 'Спорт',
+        subcategories: ['Футбол', 'Хоккей', 'Теннис', 'Баскетбол', 'Единоборства']
+    },
+    'технологии': {
+        name: 'Технологии',
+        subcategories: ['IT и программирование', 'Наука', 'Гаджеты', 'Искусственный интеллект']
+    },
+    'развлечения': {
+        name: 'Развлечения',
+        subcategories: ['Кино и сериалы', 'Музыка', 'Игры', 'Юмор']
+    },
+    'образование': {
+        name: 'Образование',
+        subcategories: ['Изучение языков', 'Онлайн курсы', 'Книги', 'Наука']
+    },
+    'бизнес': {
+        name: 'Бизнес',
+        subcategories: ['Стартапы', 'Инвестиции', 'Маркетинг', 'Криптовалюты']
     }
-
-    loading = false;
-}
-
-// Функция для отображения динамической надписи загрузки
-function showLoadingIndicator(tabContent, tabName) {
-    // Объект с надписями для разных типов контента
-    const loadingTexts = {
-        'channels': 'Идет поиск каналов...',
-        'bots': 'Идет поиск ботов...',
-        'apps': 'Идет поиск приложений...'
-    };
-    
-    // Получаем надпись в зависимости от имени вкладки
-    const text = loadingTexts[tabName] || 'Идет поиск...';
-    
-    // Отображаем надпись в контейнере вкладки
-    tabContent.innerHTML = `<div class="loading">${text}</div>`;
-}
-
-function formatSubscribers(count) {
-    if (count >= 1000000) {
-        return (count / 1000000).toFixed(2).replace('.00', '').replace('.', ',') + ' млн';
-    } else if (count >= 1000) {
-        return (count / 1000).toFixed(1).replace('.0', '').replace('.', ',') + ' тыс';
-    }
-    return count.toLocaleString();
-}
-
-// Функция для обновления позиции и размера индикатора
-function updateTabIndicator() {
-    const activeTab = document.querySelector('.bottom-tab.active');
-    const indicator = document.querySelector('.tab-indicator');
-    
-    if (activeTab && indicator) {
-        // Получаем координаты активной вкладки относительно контейнера
-        const tabRect = activeTab.getBoundingClientRect();
-        const containerRect = activeTab.parentElement.getBoundingClientRect();
-        
-        // Вычисляем смещение слева и ширину
-        const left = tabRect.left - containerRect.left;
-        const width = tabRect.width;
-        
-        // Применяем стили к индикатору
-        indicator.style.left = `${left}px`;
-        indicator.style.width = `${width}px`;
-    }
-}
-
-function resetSearch() {
-    searchInput.value = '';
-    loadProjects(getActiveTab(), false);
-}
-
-function resetFilter() {
-    resetFilterToDefault();
-    const activeTab = getActiveTab();
-    loadProjects(getActiveTab(), false);
-}
-
-function getActiveTab() {
-    const activeTab = document.querySelector('.tab.active');
-    return activeTab ? activeTab.dataset.tab : 'channels';
-}
-
-searchInput.addEventListener('blur', () => {
-    if (searchInput.value === '') {
-        loadProjects(getActiveTab(), false);
-    }
-});
-
-function handleLike(projectId, likeBtn) {
-    likeBtn.classList.toggle('liked');
-    // Находим элемент с количеством лайков внутри карточки
-    const likesCountElement = likeBtn.closest('.card').querySelector('.likes-count');
-    if (likesCountElement) {
-        let currentLikes = parseInt(likesCountElement.textContent) || 0;
-        likesCountElement.textContent = likeBtn.classList.contains('liked') ? currentLikes + 1 : currentLikes - 1;
-    }
-    console.log(`Проект ${projectId} ${likeBtn.classList.contains('liked') ? 'лайкнут' : 'дизлайкнут'}`);
-}
-
-function switchTab(tabName) {
-    document.querySelector('.tab-content.active')?.classList.remove('active');
-    bottomTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName));
-    const newContent = document.getElementById(`${tabName}-tab`);
-    newContent.classList.add('active');
-    page = 0;
-    hasMore = true;
-
-    // === Добавлено: Сброс фильтра ===
-    resetFilterToDefault();
-    
-    // Добавляем вызов обновления индикатора
-    updateTabIndicator();
-    
-    loadProjects(tabName);
-}
-
-// Функция для сброса фильтра на "Все категории"
-function resetFilterToDefault() {
-    // Сбрасываем переменную currentFilter
-    currentFilter = 'все';
-    
-    // Обновляем текст кнопки фильтра
-    if (filterBtn) {
-        filterBtn.textContent = 'Фильтр ▼';
-    }
-    
-    // Сбрасываем активный класс у опций фильтра
-    if (filterOptions) {
-        filterOptions.forEach(option => {
-            if (option.dataset.theme === 'все') {
-                option.classList.add('active');
-            } else {
-                option.classList.remove('active');
-            }
-        });
-    }
-    
-    // Скрываем dropdown, если он открыт
-    if (filterDropdown) {
-        filterDropdown.classList.remove('show');
-    }
-}
-
-function applyFiltersAndSearch() {
-    page = 0;
-    hasMore = true;
-    const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
-    loadProjects(activeTab);
-}
-
-filterBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    filterDropdown.classList.toggle('show');
-    filterBtn.textContent = filterDropdown.classList.contains('show') ? 'Фильтр ▲' : 'Фильтр ▼';
-});
-
-filterOptions.forEach(option => {
-    option.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        filterOptions.forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
-        currentFilter = option.dataset.theme;
-        filterBtn.textContent = currentFilter === 'все' ? 'Фильтр ▼' : currentFilter;
-        filterDropdown.classList.remove('show');
-        applyFiltersAndSearch();
-    });
-});
-
-document.addEventListener('click', (e) => {
-    if (!filterBtn.contains(e.target) && !filterDropdown.contains(e.target)) {
-        filterDropdown.classList.remove('show');
-        filterBtn.textContent = currentFilter === 'все' ? 'Фильтр ▼' : currentFilter;
-    }
-});
-
-bottomTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
-
-searchInput.addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        applyFiltersAndSearch();
-    }, 300);
-});
-
-// === НОВЫЙ ОБРАБОТЧИК: Скрытие клавиатуры при нажатии Enter ===
-searchInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-        // Предотвращаем стандартное поведение (например, добавление новой строки)
-        event.preventDefault();
-        
-        // Принудительно убираем фокус с поля ввода
-        searchInput.blur();
-        
-        // Применяем фильтры и запускаем поиск
-        applyFiltersAndSearch();
-    }
-});
-
-window.onscroll = function() {
-    toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
 };
 
-window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-        const activeTab = document.querySelector('.bottom-tab.active').dataset.tab;
-        const tabContent = document.getElementById(`${activeTab}-tab`);
-        const loadingElements = tabContent.querySelectorAll('.loading');
-        loadingElements.forEach(el => el.remove());
-        tabContent.insertAdjacentHTML('beforeend', '<div class="loading">Загрузка...</div>');
-        loadProjects(activeTab, true);
+// Инициализация темы Telegram
+function initializeTelegramTheme() {
+    const themeParams = tg.themeParams;
+    
+    if (themeParams) {
+        const root = document.documentElement;
+        
+        // Устанавливаем CSS переменные на основе темы Telegram
+        if (themeParams.bg_color) root.style.setProperty('--tg-theme-bg-color', themeParams.bg_color);
+        if (themeParams.text_color) root.style.setProperty('--tg-theme-text-color', themeParams.text_color);
+        if (themeParams.hint_color) root.style.setProperty('--tg-theme-hint-color', themeParams.hint_color);
+        if (themeParams.button_color) root.style.setProperty('--tg-theme-button-color', themeParams.button_color);
+        if (themeParams.button_text_color) root.style.setProperty('--tg-theme-button-text-color', themeParams.button_text_color);
+        if (themeParams.secondary_bg_color) root.style.setProperty('--tg-theme-secondary-bg-color', themeParams.secondary_bg_color);
+        if (themeParams.header_bg_color) root.style.setProperty('--tg-theme-header-bg-color', themeParams.header_bg_color);
+        if (themeParams.accent_text_color) root.style.setProperty('--tg-theme-accent-text-color', themeParams.accent_text_color);
+        if (themeParams.section_bg_color) root.style.setProperty('--tg-theme-section-bg-color', themeParams.section_bg_color);
+        if (themeParams.link_color) root.style.setProperty('--tg-theme-link-color', themeParams.link_color);
+        if (themeParams.destructive_text_color) root.style.setProperty('--tg-theme-destructive-text-color', themeParams.destructive_text_color);
+        
+        // Устанавливаем цвет заголовка
+        tg.setHeaderColor(themeParams.header_bg_color || themeParams.secondary_bg_color || 'secondary_bg_color');
     }
-});
-
-toTopBtn.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
-
-// В конце файла, где у вас DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    loadProjects('channels');
-    tg.platform !== 'unknown' && tg.BackButton.show();
-    tg.platform !== 'unknown' && tg.BackButton.onClick(() => tg.close());
     
-    // Инициализируем позицию индикатора
-    updateTabIndicator();
-});
-
-// Добавляем обработчик изменения размера окна
-window.addEventListener('resize', updateTabIndicator);
-
-// Обновляем обработчики кликов на вкладках
-bottomTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        // Сначала убираем класс active у всех вкладок
-        bottomTabs.forEach(t => t.classList.remove('active'));
-        // Добавляем класс active только кликнутой вкладке
-        tab.classList.add('active');
-        // Переключаем контент
-        switchTab(tab.dataset.tab);
+    // Слушаем изменения темы
+    tg.onEvent('themeChanged', function() {
+        initializeTelegramTheme();
     });
-});
+}
 
-// === Улучшенная Swipe Navigation для переключения вкладок ===
-let touchStartX = 0;
-let touchStartY = 0;
-let touchEndX = 0;
-let touchEndY = 0;
-const swipeThreshold = 50; // Минимальная дистанция свайпа в пикселях
-const swipeRatio = 3; // Соотношение: горизонтальное движение должно быть в N раз больше вертикального
-
-// Обработчик начала касания
-document.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-}, { passive: true });
-
-// Обработчик окончания касания
-document.addEventListener('touchend', e => {
-    touchEndX = e.changedTouches[0].screenX;
-    touchEndY = e.changedTouches[0].screenY;
-    handleSwipeGesture();
-}, { passive: true });
-
-// Функция обработки свайп-жеста
-function handleSwipeGesture() {
-    const swipeDistanceX = touchStartX - touchEndX;
-    const swipeDistanceY = Math.abs(touchStartY - touchEndY);
+// Инициализация профиля пользователя
+function initializeUserProfile() {
+    const user = tg.initDataUnsafe?.user;
     
-    // Проверяем, что горизонтальное движение значительно больше вертикального
-    if (Math.abs(swipeDistanceX) > swipeDistanceY * swipeRatio) {
-        // Проверяем минимальную дистанцию свайпа
-        if (Math.abs(swipeDistanceX) > swipeThreshold) {
-            const activeTab = document.querySelector('.bottom-tab.active');
-            const allTabs = Array.from(document.querySelectorAll('.bottom-tab'));
-            const currentIndex = allTabs.indexOf(activeTab);
+    if (user) {
+        const userNameElement = document.getElementById('userName');
+        const userAvatarElement = document.getElementById('userAvatar');
+        const userInitialsElement = document.getElementById('userInitials');
+        
+        // Устанавливаем имя пользователя
+        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+        if (userNameElement) userNameElement.textContent = fullName || 'Пользователь';
+        
+        // Устанавливаем аватар или инициалы
+        if (user.photo_url && userAvatarElement) {
+            userAvatarElement.src = user.photo_url;
+        } else if (userInitialsElement) {
+            const firstName = user.first_name || '';
+            const lastName = user.last_name || '';
             
-            let targetIndex;
+            // Берем первую букву имени и первую букву фамилии
+            const firstInitial = firstName.charAt(0).toUpperCase();
+            const secondInitial = lastName.charAt(0).toUpperCase();
             
-            if (swipeDistanceX > 0) {
-                // Свайп влево -> следующая вкладка
-                targetIndex = (currentIndex + 1) % allTabs.length;
-            } else {
-                // Свайп вправо -> предыдущая вкладка
-                targetIndex = (currentIndex - 1 + allTabs.length) % allTabs.length;
-            }
-            
-            // Получаем имя целевой вкладки и переключаемся
-            const targetTabName = allTabs[targetIndex].dataset.tab;
-            switchTab(targetTabName);
-            
-            // Обновляем активный класс на вкладках
-            allTabs.forEach(tab => tab.classList.remove('active'));
-            allTabs[targetIndex].classList.add('active');
+            const initials = firstInitial + secondInitial || (user.username?.[0]?.toUpperCase() || 'U');
+            userInitialsElement.textContent = initials;
         }
     }
 }
+
+// Функция генерации случайного офсета для каждого типа контента
+function getRandomOffset() {
+    return Math.floor(Math.random() * 20); // Случайный офсет от 0 до 19
+}
+
+// Загрузка блоков контента по 5 штук каждый
+async function loadContentSections() {
+    const types = [
+        { type: 'channel', containerId: 'channelsContent' },
+        { type: 'bot', containerId: 'botsContent' },
+        { type: 'mini_app', containerId: 'appsContent' }
+    ];
+
+    for (const { type, containerId } of types) {
+        try {
+            const offset = getRandomOffset();
+            const response = await fetch(`${API_URL}/projects/?type=${type}&limit=5&offset=${offset}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                const container = document.getElementById(containerId);
+                
+                if (container) {
+                    container.innerHTML = '';
+                    
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(project => {
+                            const card = createProjectCard(project);
+                            container.appendChild(card);
+                        });
+                    } else {
+                        container.innerHTML = '<div class="no-results">Контент недоступен</div>';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`Ошибка загрузки ${type}:`, error);
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = '<div class="no-results">Ошибка загрузки</div>';
+            }
+        }
+    }
+}
+
+// Открытие страницы категории
+async function openCategoryPage(type) {
+    const typeNames = {
+        'channel': 'Каналы',
+        'bot': 'Боты', 
+        'mini_app': 'Мини-приложения'
+    };
+
+    currentCategoryType = type;
+    categoryPage = 0;
+    categoryHasMore = true;
+    categoryLoading = false;
+    isInCategoryPage = true;
+
+    // Показываем заголовок с кнопкой назад
+    pageHeader.style.display = 'flex';
+    pageTitle.textContent = typeNames[type];
+
+    // Скрываем основные вкладки и показываем страницу категории
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    const categoryTab = document.getElementById('category-tab');
+    categoryTab.classList.add('active');
+    categoryTab.style.display = 'block';
+
+    // Создаем контейнер для контента
+    const categoryContent = document.getElementById('categoryContent');
+    categoryContent.innerHTML = '<div class="scroll-loading">Загрузка...</div>';
+
+    // Загружаем первую порцию данных
+    await loadCategoryContent();
+
+    // Добавляем обработчик бесконечного скролла
+    addInfiniteScroll();
+}
+
+// Загрузка контента категории с пагинацией (с поддержкой поиска и фильтра)
+async function loadCategoryContent(append = false) {
+    if (categoryLoading || (!categoryHasMore && append)) return;
+    
+    categoryLoading = true;
+    const categoryContent = document.getElementById('categoryContent');
+
+    if (!append) {
+        categoryContent.innerHTML = '<div class="scroll-loading">Загрузка...</div>';
+    }
+
+    try {
+        const query = searchInput?.value?.trim() || '';
+        let themeFilter = currentFilter === 'все' ? '' : currentFilter;
+        
+        // Если выбрана подкатегория, используем её вместо основной категории
+        if (currentSubcategory) {
+            themeFilter = currentSubcategory;
+        }
+
+        // Строим URL с поддержкой умного поиска и фильтров
+        const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
+        const themeParam = themeFilter ? `&theme=${encodeURIComponent(themeFilter)}` : '';
+        
+        const apiUrl = `${API_URL}/projects/?type=${currentCategoryType}${themeParam}${searchParam}&limit=10&offset=${categoryPage * 10}`;
+        
+        console.log('Category API URL:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (!append) {
+                categoryContent.innerHTML = '';
+            } else {
+                // Убираем индикатор загрузки
+                const loadingElement = categoryContent.querySelector('.scroll-loading');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+            }
+
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(project => {
+                    const card = createProjectCard(project);
+                    categoryContent.appendChild(card);
+                });
+
+                categoryPage++;
+                categoryHasMore = data.length === 10;
+                
+                if (categoryHasMore) {
+                    const loadingElement = document.createElement('div');
+                    loadingElement.className = 'scroll-loading';
+                    loadingElement.textContent = 'Загрузка еще...';
+                    categoryContent.appendChild(loadingElement);
+                }
+            } else {
+                if (categoryPage === 0) {
+                    categoryContent.innerHTML = '<div class="no-results">Контент недоступен</div>';
+                }
+                categoryHasMore = false;
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки категории:', error);
+        if (categoryPage === 0) {
+            categoryContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+        }
+    } finally {
+        categoryLoading = false;
+    }
+}
+
+// Добавление бесконечного скролла
+function addInfiniteScroll() {
+    const handleScroll = () => {
+        if (categoryLoading || !categoryHasMore) return;
+
+        const scrollTop = window.pageYOffset;
+        const windowHeight = window.innerHeight;
+        const docHeight = document.documentElement.scrollHeight;
+
+        // Загружаем больше контента когда пользователь почти доходит до конца
+        if (scrollTop + windowHeight >= docHeight - 1000) {
+            loadCategoryContent(true);
+        }
+    };
+
+    // Удаляем предыдущий обработчик если есть
+    window.removeEventListener('scroll', window.categoryScrollHandler);
+    
+    // Добавляем новый обработчик
+    window.categoryScrollHandler = handleScroll;
+    window.addEventListener('scroll', handleScroll);
+}
+
+// Возврат на главную страницу поиска
+function goBackToSearch() {
+    // Скрываем заголовок с кнопкой назад
+    pageHeader.style.display = 'none';
+    isInCategoryPage = false;
+    
+    // Показываем вкладку поиска
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('search-tab').classList.add('active');
+    document.getElementById('category-tab').style.display = 'none';
+
+    // Убираем обработчик бесконечного скролла
+    window.removeEventListener('scroll', window.categoryScrollHandler);
+    
+    // Прокручиваем наверх
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Основная функция загрузки проектов с поиском и фильтром
+async function loadProjects(contentType = 'all', append = false) {
+    if (loading || (!hasMore && append)) return;
+    loading = true;
+
+    const resultsTab = document.getElementById('results-tab');
+    let resultsContent = document.getElementById('resultsContent');
+    
+    if (!resultsContent) {
+        resultsContent = document.createElement('div');
+        resultsContent.id = 'resultsContent';
+        resultsTab.appendChild(resultsContent);
+    }
+
+    if (!append) {
+        resultsContent.innerHTML = '<div class="loading">Идет поиск...</div>';
+        page = 0;
+        hasMore = true;
+    }
+
+    const query = searchInput?.value?.trim() || '';
+    let themeFilter = currentFilter === 'все' ? '' : currentFilter;
+    
+    // Если выбрана подкатегория, используем её вместо основной категории
+    if (currentSubcategory) {
+        themeFilter = currentSubcategory;
+    }
+
+    try {
+        let apiCalls = [];
+        let types = [];
+        
+        if (contentType === 'all') {
+            types = ['channel', 'bot', 'mini_app'];
+        } else {
+            types = [contentType];
+        }
+
+        for (const type of types) {
+            const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
+            const themeParam = themeFilter ? `&theme=${encodeURIComponent(themeFilter)}` : '';
+            
+            const apiUrl = `${API_URL}/projects/?type=${type}${themeParam}${searchParam}&limit=10&offset=${page*10}`;
+            
+            apiCalls.push(
+                fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    return { type, data: { items: Array.isArray(data) ? data : [] } };
+                })
+                .catch(error => {
+                    console.error(`Error for ${type}:`, error);
+                    return { type, data: { items: [] } };
+                })
+            );
+        }
+
+        const results = await Promise.all(apiCalls);
+        
+        if (!append) {
+            resultsContent.innerHTML = '';
+        }
+        
+        let hasResults = false;
+        
+        for (const { type, data } of results) {
+            if (data.items && data.items.length > 0) {
+                hasResults = true;
+                
+                // Добавляем заголовок для типа контента (только если показываем все типы)
+                if (contentType === 'all' && types.length > 1) {
+                    const typeHeader = document.createElement('div');
+                    typeHeader.className = 'results-type-header';
+                    typeHeader.innerHTML = getTypeHeaderText(type);
+                    resultsContent.appendChild(typeHeader);
+                }
+                
+                data.items.forEach(project => {
+                    const card = createProjectCard(project);
+                    resultsContent.appendChild(card);
+                });
+            }
+        }
+        
+        if (!hasResults && page === 0) {
+            resultsContent.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+            hasMore = false;
+        } else {
+            // Проверяем есть ли еще данные
+            hasMore = results.some(result => result.data.items && result.data.items.length === 10);
+        }
+        
+        page++;
+        
+        // Показываем вкладку результатов
+        showResultsTab();
+        
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        if (page === 0) {
+            resultsContent.innerHTML = '<div class="no-results">Ошибка загрузки данных. Попробуйте позже.</div>';
+        }
+    } finally {
+        loading = false;
+    }
+}
+
+// Загрузка рекомендаций
+async function loadRecommendations() {
+    const recommendationsContent = document.getElementById('recommendationsContent');
+    if (!recommendationsContent) return;
+
+    recommendationsContent.innerHTML = '<div class="loading">Подбираем рекомендации...</div>';
+
+    try {
+        // Загружаем смешанные рекомендации из разных категорий
+        const [channelsResp, botsResp, appsResp] = await Promise.all([
+            fetch(`${API_URL}/projects/?type=channel&limit=3&offset=0`),
+            fetch(`${API_URL}/projects/?type=bot&limit=2&offset=0`),
+            fetch(`${API_URL}/projects/?type=mini_app&limit=2&offset=0`)
+        ]);
+
+        const [channelsData, botsData, appsData] = await Promise.all([
+            channelsResp.ok ? channelsResp.json() : [],
+            botsResp.ok ? botsResp.json() : [],
+            appsResp.ok ? appsResp.json() : []
+        ]);
+
+        recommendationsContent.innerHTML = '';
+
+        // Создаем секции рекомендаций
+        if (Array.isArray(channelsData) && channelsData.length) {
+            const channelsSection = document.createElement('div');
+            channelsSection.innerHTML = '<h4>Популярные каналы</h4>';
+            channelsData.forEach(project => {
+                const card = createProjectCard(project);
+                channelsSection.appendChild(card);
+            });
+            recommendationsContent.appendChild(channelsSection);
+        }
+
+        if (Array.isArray(botsData) && botsData.length) {
+            const botsSection = document.createElement('div');
+            botsSection.innerHTML = '<h4>Полезные боты</h4>';
+            botsData.forEach(project => {
+                const card = createProjectCard(project);
+                botsSection.appendChild(card);
+            });
+            recommendationsContent.appendChild(botsSection);
+        }
+
+        if (Array.isArray(appsData) && appsData.length) {
+            const appsSection = document.createElement('div');
+            appsSection.innerHTML = '<h4>Интересные приложения</h4>';
+            appsData.forEach(project => {
+                const card = createProjectCard(project);
+                appsSection.appendChild(card);
+            });
+            recommendationsContent.appendChild(appsSection);
+        }
+
+        if (!channelsData?.length && !botsData?.length && !appsData?.length) {
+            recommendationsContent.innerHTML = '<div class="no-results">Рекомендации временно недоступны</div>';
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки рекомендаций:', error);
+        recommendationsContent.innerHTML = '<div class="no-results">Ошибка загрузки рекомендаций</div>';
+    }
+}
+
+// Загрузка категорий
+function loadCategories() {
+    const categoriesGrid = document.getElementById('categoriesGrid');
+    if (!categoriesGrid) return;
+
+    const categories = [
+        { icon: '📰', title: 'Новости', value: 'новости' },
+        { icon: '⚽', title: 'Спорт', value: 'спорт' },
+        { icon: '💻', title: 'Технологии', value: 'технологии' },
+        { icon: '🎭', title: 'Развлечения', value: 'развлечения' },
+        { icon: '📚', title: 'Образование', value: 'образование' },
+        { icon: '💼', title: 'Бизнес', value: 'бизнес' }
+    ];
+
+    categoriesGrid.innerHTML = '';
+    categories.forEach(category => {
+        const categoryItem = document.createElement('div');
+        categoryItem.className = 'category-item';
+        categoryItem.innerHTML = `
+            <div class="category-item-icon">${category.icon}</div>
+            <div class="category-item-title">${category.title}</div>
+        `;
+        
+        categoryItem.addEventListener('click', () => {
+            currentFilter = category.value;
+            currentSubcategory = null; // Сбрасываем подкатегорию при выборе основной категории
+            
+            // Если мы на странице категории, обновляем её
+            if (isInCategoryPage) {
+                categoryPage = 0;
+                categoryHasMore = true;
+                loadCategoryContent();
+            } else {
+                // Иначе загружаем результаты поиска
+                loadProjects(currentContentType);
+            }
+        });
+        
+        categoriesGrid.appendChild(categoryItem);
+    });
+}
+
+// Создание карточки проекта с исправленным отображением подписчиков
+function createProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    
+    if (project.is_premium) {
+        card.classList.add('premium-card');
+    }
+
+    // Определение URL для иконки
+    let iconHtml = '';
+    if (project.icon || project.avatar_url) {
+        const iconUrl = project.icon || project.avatar_url;
+        iconHtml = `<img src="${iconUrl}" alt="${project.name || project.title}" class="channel-icon">`;
+    } else {
+        const firstLetter = (project.name || project.title || '').charAt(0).toUpperCase() || 'T';
+        iconHtml = `<div class="channel-letter-badge">${firstLetter}</div>`;
+    }
+
+    const projectName = project.name || project.title || 'Без названия';
+    const projectDescription = project.description || project.theme || 'Описание недоступно';
+    const projectUrl = project.url || project.link || '#';
+    
+    // Поддерживаем разные поля для количества подписчиков
+    const subscribersCount = project.subscribers || project.subscribers_count || project.likes || 0;
+
+    card.innerHTML = `
+        ${project.is_premium ? '<div class="premium-badge">Premium</div>' : ''}
+        <div class="card-content">
+            <a href="${projectUrl}" target="_blank" class="channel-clickable-area" data-url="${projectUrl}">
+                <div class="channel-icon-container">
+                    ${iconHtml}
+                    <div class="channel-info">
+                        <h3>${projectName}</h3>
+                        <p>${projectDescription}</p>
+                    </div>
+                </div>
+            </a>
+            <div class="subscribers-mini">
+                <span class="subscribers-badge">👥 ${formatNumber(subscribersCount)}</span>
+            </div>
+        </div>
+    `;
+
+    // Добавляем обработчик клика для аналитики
+    const clickableArea = card.querySelector('.channel-clickable-area');
+    clickableArea.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // Отправляем данные обратно в Telegram (если нужно)
+        if (tg.sendData) {
+            tg.sendData(JSON.stringify({
+                action: 'open_project',
+                project_id: project.id,
+                project_title: projectName,
+                project_url: projectUrl
+            }));
+        }
+        
+        // Открываем ссылку
+        window.open(projectUrl, '_blank');
+    });
+
+    return card;
+}
+
+// Получение заголовка для типа контента
+function getTypeHeaderText(type) {
+    const headers = {
+        'channel': '<h4>📺 Каналы</h4>',
+        'bot': '<h4>🤖 Боты</h4>',
+        'mini_app': '<h4>📱 Мини-приложения</h4>'
+    };
+    return headers[type] || '';
+}
+
+// Форматирование чисел
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+// Показать вкладку результатов
+function showResultsTab() {
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('results-tab').classList.add('active');
+    document.getElementById('results-tab').style.display = 'block';
+}
+
+// Показать основную вкладку
+function showMainTab() {
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('search-tab').classList.add('active');
+    document.getElementById('results-tab').style.display = 'none';
+}
+
+// Инициализация вкладок
+function initializeTabs() {
+    const tabs = document.querySelectorAll('.bottom-tab');
+
+    function switchTab(tabName) {
+        // Возвращаемся на главную если находимся в категории
+        if (document.getElementById('category-tab').classList.contains('active')) {
+            goBackToSearch();
+        }
+
+        // Скрываем все вкладки
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Убираем активный класс у всех вкладок
+        tabs.forEach(tab => tab.classList.remove('active'));
+        
+        // Активируем нужную вкладку
+        const targetTab = document.getElementById(`${tabName}-tab`);
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+        
+        // Активируем соответствующую кнопку в навигации
+        const activeNavTab = document.querySelector(`.bottom-tab[data-tab="${tabName}"]`);
+        if (activeNavTab) {
+            activeNavTab.classList.add('active');
+        }
+
+        // Показываем/скрываем строку поиска в зависимости от вкладки
+        if (searchContainer) {
+            if (tabName === 'settings') {
+                searchContainer.classList.add('hidden');
+            } else {
+                searchContainer.classList.remove('hidden');
+            }
+        }
+
+        // Загружаем контент для вкладки
+        if (tabName === 'search') {
+            showMainTab();
+            loadContentSections();
+            loadCategories();
+        } else if (tabName === 'recommendations') {
+            loadRecommendations();
+        }
+        // Для settings ничего дополнительно не загружаем
+    }
+
+    // Инициализация обработчиков вкладок
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+}
+
+// Поиск с задержкой
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Обработка поиска
+const debouncedSearch = debounce(() => {
+    const query = searchInput?.value?.trim() || '';
+    
+    if (isInCategoryPage) {
+        // Если мы на странице категории, перезагружаем её с учетом поиска
+        categoryPage = 0;
+        categoryHasMore = true;
+        loadCategoryContent();
+    } else {
+        // Иначе обрабатываем как обычный поиск
+        if (query.length > 0 || currentFilter !== 'все' || currentSubcategory) {
+            loadProjects(currentContentType);
+        } else {
+            showMainTab();
+        }
+    }
+}, 300);
+
+// Обработка фильтра
+function handleFilterToggle() {
+    if (filterModal) {
+        // Скрываем/показываем секцию выбора типа контента в зависимости от того, где мы находимся
+        const contentTypeSection = document.querySelector('.filter-section:first-child');
+        if (contentTypeSection) {
+            if (isInCategoryPage) {
+                contentTypeSection.classList.add('hidden');
+            } else {
+                contentTypeSection.classList.remove('hidden');
+            }
+        }
+        
+        filterModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function handleFilterClose() {
+    if (filterModal) {
+        filterModal.classList.add('closing');
+        
+        setTimeout(() => {
+            filterModal.classList.remove('show', 'closing');
+            document.body.style.overflow = '';
+        }, 400);
+    }
+}
+
+function handleFilterReset() {
+    // Сбрасываем все фильтры
+    currentFilter = 'все';
+    if (!isInCategoryPage) {
+        currentContentType = 'all';
+    }
+    currentSortBy = 'subscribers';
+    currentSubcategory = null;
+    
+    // Сбрасываем UI
+    if (!isInCategoryPage) {
+        const contentTypeAll = document.querySelector('input[name="contentType"][value="all"]');
+        if (contentTypeAll) contentTypeAll.checked = true;
+    }
+    const sortBySubscribers = document.querySelector('input[name="sortBy"][value="subscribers"]');
+    if (sortBySubscribers) sortBySubscribers.checked = true;
+    
+    // Сбрасываем категории
+    document.querySelectorAll('.filter-category-item').forEach(item => {
+        item.classList.remove('selected', 'expanded');
+    });
+    document.querySelectorAll('.filter-subcategories').forEach(sub => {
+        sub.classList.remove('show');
+    });
+    const allCategory = document.querySelector('.filter-category-item[data-category="все"]');
+    if (allCategory) allCategory.classList.add('selected');
+}
+
+function handleFilterApply() {
+    // Получаем выбранные значения
+    const sortByInput = document.querySelector('input[name="sortBy"]:checked');
+    const selectedCategory = document.querySelector('.filter-category-item.selected:not(.subcategory)');
+    const selectedSubcategory = document.querySelector('.filter-subcategory-item.selected');
+    
+    if (!isInCategoryPage) {
+        const contentTypeInput = document.querySelector('input[name="contentType"]:checked');
+        if (contentTypeInput) currentContentType = contentTypeInput.value;
+    }
+    
+    if (sortByInput) currentSortBy = sortByInput.value;
+    
+    if (selectedSubcategory) {
+        currentSubcategory = selectedSubcategory.dataset.subcategory;
+        currentFilter = selectedSubcategory.dataset.parentCategory;
+    } else if (selectedCategory) {
+        currentFilter = selectedCategory.dataset.category;
+        currentSubcategory = null;
+    }
+    
+    // Закрываем модал
+    handleFilterClose();
+    
+    // Применяем фильтры
+    if (isInCategoryPage) {
+        categoryPage = 0;
+        categoryHasMore = true;
+        loadCategoryContent();
+    } else {
+        loadProjects(currentContentType);
+    }
+}
+
+// Создание категорий в фильтре
+function createFilterCategories() {
+    const filterCategories = document.getElementById('filterCategories');
+    if (!filterCategories) return;
+
+    filterCategories.innerHTML = '';
+
+    Object.entries(categoriesData).forEach(([key, categoryData]) => {
+        // Основная категория
+        const categoryItem = document.createElement('div');
+        categoryItem.className = 'filter-category-item';
+        categoryItem.dataset.category = key;
+        
+        if (key === 'все') {
+            categoryItem.classList.add('selected');
+        }
+        
+        categoryItem.innerHTML = `
+            <span>${categoryData.name}</span>
+            ${categoryData.subcategories.length > 0 ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>' : ''}
+        `;
+        
+        categoryItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // Если у категории есть подкатегории
+            if (categoryData.subcategories.length > 0) {
+                const isExpanded = categoryItem.classList.contains('expanded');
+                
+                // Закрываем все другие категории
+                document.querySelectorAll('.filter-category-item').forEach(item => {
+                    item.classList.remove('expanded');
+                });
+                document.querySelectorAll('.filter-subcategories').forEach(sub => {
+                    sub.classList.remove('show');
+                });
+                
+                if (!isExpanded) {
+                    categoryItem.classList.add('expanded');
+                    const subcategoriesDiv = categoryItem.nextElementSibling;
+                    if (subcategoriesDiv) {
+                        subcategoriesDiv.classList.add('show');
+                    }
+                }
+            } else {
+                // Выбираем категорию без подкатегорий
+                document.querySelectorAll('.filter-category-item, .filter-subcategory-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                categoryItem.classList.add('selected');
+            }
+        });
+        
+        filterCategories.appendChild(categoryItem);
+        
+        // Подкатегории
+        if (categoryData.subcategories.length > 0) {
+            const subcategoriesDiv = document.createElement('div');
+            subcategoriesDiv.className = 'filter-subcategories';
+            
+            categoryData.subcategories.forEach(subcategory => {
+                const subcategoryItem = document.createElement('div');
+                subcategoryItem.className = 'filter-subcategory-item';
+                subcategoryItem.dataset.subcategory = subcategory;
+                subcategoryItem.dataset.parentCategory = key;
+                subcategoryItem.innerHTML = `<span>${subcategory}</span>`;
+                
+                subcategoryItem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Снимаем выделение со всех элементов
+                    document.querySelectorAll('.filter-category-item, .filter-subcategory-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    
+                    // Выделяем выбранную подкатегорию
+                    subcategoryItem.classList.add('selected');
+                });
+                
+                subcategoriesDiv.appendChild(subcategoryItem);
+            });
+            
+            filterCategories.appendChild(subcategoriesDiv);
+        }
+    });
+}
+
+// Инициализация фильтра
+function initializeFilter() {
+    createFilterCategories();
+}
+
+// Обработка клика на настройки
+function handleSettingsClick(settingType) {
+    console.log(`Clicked on setting: ${settingType}`);
+    
+    switch (settingType) {
+        case 'notifications':
+            break;
+        case 'theme':
+            break;
+        case 'language':
+            break;
+        case 'support':
+            if (tg.openTelegramLink) {
+                tg.openTelegramLink('https://t.me/support_bot');
+            }
+            break;
+        case 'faq':
+            break;
+        case 'privacy':
+            break;
+    }
+}
+
+// Скролл вверх
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+// Обработка скролла для кнопки "Наверх"
+function handleScroll() {
+    if (toTopBtn) {
+        if (window.pageYOffset > 300) {
+            toTopBtn.style.display = 'block';
+        } else {
+            toTopBtn.style.display = 'none';
+        }
+    }
+}
+
+// Инициализация при загрузке DOM
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing app...');
+    
+    initializeTabs();
+    initializeFilter();
+    
+    // Обработчики событий
+    if (searchInput) {
+        searchInput.addEventListener('input', debouncedSearch);
+    }
+    
+    if (filterBtn) {
+        filterBtn.addEventListener('click', handleFilterToggle);
+    }
+    
+    if (filterModalClose) {
+        filterModalClose.addEventListener('click', handleFilterClose);
+    }
+    
+    if (filterResetBtn) {
+        filterResetBtn.addEventListener('click', handleFilterReset);
+    }
+    
+    if (filterApplyBtn) {
+        filterApplyBtn.addEventListener('click', handleFilterApply);
+    }
+    
+    if (toTopBtn) {
+        toTopBtn.addEventListener('click', scrollToTop);
+    }
+    
+    if (backButton) {
+        backButton.addEventListener('click', goBackToSearch);
+    }
+
+    // Обработчики кликов по заголовкам секций
+    document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const type = header.dataset.type;
+            if (type) {
+                openCategoryPage(type);
+            }
+        });
+    });
+    
+    // Обработка скролла
+    window.addEventListener('scroll', handleScroll);
+    
+    // Плавное закрытие модала при клике на задний фон
+    if (filterModal) {
+        filterModal.addEventListener('click', (e) => {
+            if (e.target === filterModal) {
+                handleFilterClose();
+            }
+        });
+        
+        // Предотвращаем закрытие при клике на контент модала
+        const modalContent = document.querySelector('.filter-modal-content');
+        if (modalContent) {
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+    }
+    
+    // Загружаем контент первой вкладки
+    loadContentSections();
+    loadCategories();
+    
+    // Готовность приложения
+    tg.ready();
+});
