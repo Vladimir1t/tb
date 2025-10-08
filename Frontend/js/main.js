@@ -5,7 +5,7 @@ tg.expand();
 initializeTelegramTheme();
 initializeUserProfile();
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://tcatalogbot.ru/api';
 let searchTimeout;
 let currentFilter = 'все';
 let currentContentType = 'all';
@@ -14,6 +14,11 @@ let currentSubcategory = null;
 let page = 0;
 let hasMore = true;
 let loading = false;
+let currentCategoryType = null;
+let categoryPage = 0;
+let categoryHasMore = true;
+let categoryLoading = false;
+let isInCategoryPage = false;
 
 const toTopBtn = document.getElementById('toTopBtn');
 const searchInput = document.getElementById('searchInput');
@@ -23,6 +28,9 @@ const filterModal = document.getElementById('filterModal');
 const filterModalClose = document.getElementById('filterModalClose');
 const filterResetBtn = document.getElementById('filterResetBtn');
 const filterApplyBtn = document.getElementById('filterApplyBtn');
+const pageHeader = document.getElementById('pageHeader');
+const pageTitle = document.getElementById('pageTitle');
+const backButton = document.getElementById('backButton');
 
 // Данные категорий и подкатегорий
 const categoriesData = {
@@ -116,6 +124,209 @@ function initializeUserProfile() {
     }
 }
 
+// Функция генерации случайного офсета для каждого типа контента
+function getRandomOffset() {
+    return Math.floor(Math.random() * 20); // Случайный офсет от 0 до 19
+}
+
+// Загрузка блоков контента по 5 штук каждый
+async function loadContentSections() {
+    const types = [
+        { type: 'channel', containerId: 'channelsContent' },
+        { type: 'bot', containerId: 'botsContent' },
+        { type: 'mini_app', containerId: 'appsContent' }
+    ];
+
+    for (const { type, containerId } of types) {
+        try {
+            const offset = getRandomOffset();
+            const response = await fetch(`${API_URL}/projects/?type=${type}&limit=5&offset=${offset}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                const container = document.getElementById(containerId);
+                
+                if (container) {
+                    container.innerHTML = '';
+                    
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(project => {
+                            const card = createProjectCard(project);
+                            container.appendChild(card);
+                        });
+                    } else {
+                        container.innerHTML = '<div class="no-results">Контент недоступен</div>';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`Ошибка загрузки ${type}:`, error);
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = '<div class="no-results">Ошибка загрузки</div>';
+            }
+        }
+    }
+}
+
+// Открытие страницы категории
+async function openCategoryPage(type) {
+    const typeNames = {
+        'channel': 'Каналы',
+        'bot': 'Боты', 
+        'mini_app': 'Мини-приложения'
+    };
+
+    currentCategoryType = type;
+    categoryPage = 0;
+    categoryHasMore = true;
+    categoryLoading = false;
+    isInCategoryPage = true;
+
+    // Показываем заголовок с кнопкой назад
+    pageHeader.style.display = 'flex';
+    pageTitle.textContent = typeNames[type];
+
+    // Скрываем основные вкладки и показываем страницу категории
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    const categoryTab = document.getElementById('category-tab');
+    categoryTab.classList.add('active');
+    categoryTab.style.display = 'block';
+
+    // Создаем контейнер для контента
+    const categoryContent = document.getElementById('categoryContent');
+    categoryContent.innerHTML = '<div class="scroll-loading">Загрузка...</div>';
+
+    // Загружаем первую порцию данных
+    await loadCategoryContent();
+
+    // Добавляем обработчик бесконечного скролла
+    addInfiniteScroll();
+}
+
+// Загрузка контента категории с пагинацией (с поддержкой поиска и фильтра)
+async function loadCategoryContent(append = false) {
+    if (categoryLoading || (!categoryHasMore && append)) return;
+    
+    categoryLoading = true;
+    const categoryContent = document.getElementById('categoryContent');
+
+    if (!append) {
+        categoryContent.innerHTML = '<div class="scroll-loading">Загрузка...</div>';
+    }
+
+    try {
+        const query = searchInput?.value?.trim() || '';
+        let themeFilter = currentFilter === 'все' ? '' : currentFilter;
+        
+        // Если выбрана подкатегория, используем её вместо основной категории
+        if (currentSubcategory) {
+            themeFilter = currentSubcategory;
+        }
+
+        // Строим URL с поддержкой умного поиска и фильтров
+        const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
+        const themeParam = themeFilter ? `&theme=${encodeURIComponent(themeFilter)}` : '';
+        
+        const apiUrl = `${API_URL}/projects/?type=${currentCategoryType}${themeParam}${searchParam}&limit=10&offset=${categoryPage * 10}`;
+        
+        console.log('Category API URL:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (!append) {
+                categoryContent.innerHTML = '';
+            } else {
+                // Убираем индикатор загрузки
+                const loadingElement = categoryContent.querySelector('.scroll-loading');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+            }
+
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(project => {
+                    const card = createProjectCard(project);
+                    categoryContent.appendChild(card);
+                });
+
+                categoryPage++;
+                categoryHasMore = data.length === 10;
+                
+                if (categoryHasMore) {
+                    const loadingElement = document.createElement('div');
+                    loadingElement.className = 'scroll-loading';
+                    loadingElement.textContent = 'Загрузка еще...';
+                    categoryContent.appendChild(loadingElement);
+                }
+            } else {
+                if (categoryPage === 0) {
+                    categoryContent.innerHTML = '<div class="no-results">Контент недоступен</div>';
+                }
+                categoryHasMore = false;
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки категории:', error);
+        if (categoryPage === 0) {
+            categoryContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+        }
+    } finally {
+        categoryLoading = false;
+    }
+}
+
+// Добавление бесконечного скролла
+function addInfiniteScroll() {
+    const handleScroll = () => {
+        if (categoryLoading || !categoryHasMore) return;
+
+        const scrollTop = window.pageYOffset;
+        const windowHeight = window.innerHeight;
+        const docHeight = document.documentElement.scrollHeight;
+
+        // Загружаем больше контента когда пользователь почти доходит до конца
+        if (scrollTop + windowHeight >= docHeight - 1000) {
+            loadCategoryContent(true);
+        }
+    };
+
+    // Удаляем предыдущий обработчик если есть
+    window.removeEventListener('scroll', window.categoryScrollHandler);
+    
+    // Добавляем новый обработчик
+    window.categoryScrollHandler = handleScroll;
+    window.addEventListener('scroll', handleScroll);
+}
+
+// Возврат на главную страницу поиска
+function goBackToSearch() {
+    // Скрываем заголовок с кнопкой назад
+    pageHeader.style.display = 'none';
+    isInCategoryPage = false;
+    
+    // Показываем вкладку поиска
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('search-tab').classList.add('active');
+    document.getElementById('category-tab').style.display = 'none';
+
+    // Убираем обработчик бесконечного скролла
+    window.removeEventListener('scroll', window.categoryScrollHandler);
+    
+    // Прокручиваем наверх
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // Основная функция загрузки проектов с поиском и фильтром
 async function loadProjects(contentType = 'all', append = false) {
     if (loading || (!hasMore && append)) return;
@@ -136,19 +347,13 @@ async function loadProjects(contentType = 'all', append = false) {
         hasMore = true;
     }
 
-    const query = searchInput.value.trim();
+    const query = searchInput?.value?.trim() || '';
     let themeFilter = currentFilter === 'все' ? '' : currentFilter;
     
     // Если выбрана подкатегория, используем её вместо основной категории
     if (currentSubcategory) {
         themeFilter = currentSubcategory;
     }
-
-    console.log("Текущий фильтр (currentFilter):", currentFilter);
-    console.log("Подкатегория (currentSubcategory):", currentSubcategory);
-    console.log("Тип контента (contentType):", contentType);
-    console.log("Поисковый запрос (query):", query);
-    console.log("Фильтр по теме (themeFilter):", themeFilter);
 
     try {
         let apiCalls = [];
@@ -162,15 +367,25 @@ async function loadProjects(contentType = 'all', append = false) {
 
         for (const type of types) {
             const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
-            const sortParam = `&sort_by=${currentSortBy}`;
+            const themeParam = themeFilter ? `&theme=${encodeURIComponent(themeFilter)}` : '';
+            
+            const apiUrl = `${API_URL}/projects/?type=${type}${themeParam}${searchParam}&limit=10&offset=${page*10}`;
             
             apiCalls.push(
-                fetch(`${API_URL}/projects/?type=${type}&theme=${encodeURIComponent(themeFilter)}${searchParam}${sortParam}&limit=10&offset=${page*10}`)
+                fetch(apiUrl)
                 .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
                     return response.json();
                 })
-                .then(data => ({ type, data }))
+                .then(data => {
+                    return { type, data: { items: Array.isArray(data) ? data : [] } };
+                })
+                .catch(error => {
+                    console.error(`Error for ${type}:`, error);
+                    return { type, data: { items: [] } };
+                })
             );
         }
 
@@ -217,54 +432,73 @@ async function loadProjects(contentType = 'all', append = false) {
     } catch (error) {
         console.error('Ошибка загрузки:', error);
         if (page === 0) {
-            resultsContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+            resultsContent.innerHTML = '<div class="no-results">Ошибка загрузки данных. Попробуйте позже.</div>';
         }
     } finally {
         loading = false;
     }
 }
 
-// Загрузка популярного контента для главной страницы
-async function loadFeaturedContent() {
-    const featuredContent = document.getElementById('featuredContent');
-    if (!featuredContent) return;
+// Загрузка рекомендаций
+async function loadRecommendations() {
+    const recommendationsContent = document.getElementById('recommendationsContent');
+    if (!recommendationsContent) return;
 
-    featuredContent.innerHTML = '<div class="loading">Загрузка популярного контента...</div>';
+    recommendationsContent.innerHTML = '<div class="loading">Подбираем рекомендации...</div>';
 
     try {
-        // Загружаем по несколько элементов каждого типа
+        // Загружаем смешанные рекомендации из разных категорий
         const [channelsResp, botsResp, appsResp] = await Promise.all([
-            fetch(`${API_URL}/projects/?type=channel&sort_by=subscribers&limit=3&offset=0`),
-            fetch(`${API_URL}/projects/?type=bot&sort_by=subscribers&limit=2&offset=0`),
-            fetch(`${API_URL}/projects/?type=mini_app&sort_by=subscribers&limit=2&offset=0`)
+            fetch(`${API_URL}/projects/?type=channel&limit=3&offset=0`),
+            fetch(`${API_URL}/projects/?type=bot&limit=2&offset=0`),
+            fetch(`${API_URL}/projects/?type=mini_app&limit=2&offset=0`)
         ]);
 
         const [channelsData, botsData, appsData] = await Promise.all([
-            channelsResp.json(),
-            botsResp.json(),
-            appsResp.json()
+            channelsResp.ok ? channelsResp.json() : [],
+            botsResp.ok ? botsResp.json() : [],
+            appsResp.ok ? appsResp.json() : []
         ]);
 
-        featuredContent.innerHTML = '';
+        recommendationsContent.innerHTML = '';
 
-        // Объединяем все результаты
-        const allItems = [
-            ...(channelsData.items || []),
-            ...(botsData.items || []),
-            ...(appsData.items || [])
-        ];
-
-        if (allItems.length) {
-            allItems.forEach(project => {
+        // Создаем секции рекомендаций
+        if (Array.isArray(channelsData) && channelsData.length) {
+            const channelsSection = document.createElement('div');
+            channelsSection.innerHTML = '<h4>Популярные каналы</h4>';
+            channelsData.forEach(project => {
                 const card = createProjectCard(project);
-                featuredContent.appendChild(card);
+                channelsSection.appendChild(card);
             });
-        } else {
-            featuredContent.innerHTML = '<div class="no-results">Контент временно недоступен</div>';
+            recommendationsContent.appendChild(channelsSection);
+        }
+
+        if (Array.isArray(botsData) && botsData.length) {
+            const botsSection = document.createElement('div');
+            botsSection.innerHTML = '<h4>Полезные боты</h4>';
+            botsData.forEach(project => {
+                const card = createProjectCard(project);
+                botsSection.appendChild(card);
+            });
+            recommendationsContent.appendChild(botsSection);
+        }
+
+        if (Array.isArray(appsData) && appsData.length) {
+            const appsSection = document.createElement('div');
+            appsSection.innerHTML = '<h4>Интересные приложения</h4>';
+            appsData.forEach(project => {
+                const card = createProjectCard(project);
+                appsSection.appendChild(card);
+            });
+            recommendationsContent.appendChild(appsSection);
+        }
+
+        if (!channelsData?.length && !botsData?.length && !appsData?.length) {
+            recommendationsContent.innerHTML = '<div class="no-results">Рекомендации временно недоступны</div>';
         }
     } catch (error) {
-        console.error('Ошибка загрузки популярного контента:', error);
-        featuredContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+        console.error('Ошибка загрузки рекомендаций:', error);
+        recommendationsContent.innerHTML = '<div class="no-results">Ошибка загрузки рекомендаций</div>';
     }
 }
 
@@ -294,77 +528,23 @@ function loadCategories() {
         categoryItem.addEventListener('click', () => {
             currentFilter = category.value;
             currentSubcategory = null; // Сбрасываем подкатегорию при выборе основной категории
-            loadProjects(currentContentType);
+            
+            // Если мы на странице категории, обновляем её
+            if (isInCategoryPage) {
+                categoryPage = 0;
+                categoryHasMore = true;
+                loadCategoryContent();
+            } else {
+                // Иначе загружаем результаты поиска
+                loadProjects(currentContentType);
+            }
         });
         
         categoriesGrid.appendChild(categoryItem);
     });
 }
 
-// Загрузка рекомендаций
-async function loadRecommendations() {
-    const recommendationsContent = document.getElementById('recommendationsContent');
-    if (!recommendationsContent) return;
-
-    recommendationsContent.innerHTML = '<div class="loading">Подбираем рекомендации...</div>';
-
-    try {
-        // Загружаем смешанные рекомендации из разных категорий
-        const [channelsResp, botsResp, appsResp] = await Promise.all([
-            fetch(`${API_URL}/projects/?type=channel&limit=3&offset=0`),
-            fetch(`${API_URL}/projects/?type=bot&limit=2&offset=0`),
-            fetch(`${API_URL}/projects/?type=mini_app&limit=2&offset=0`)
-        ]);
-
-        const [channelsData, botsData, appsData] = await Promise.all([
-            channelsResp.json(),
-            botsResp.json(),
-            appsResp.json()
-        ]);
-
-        recommendationsContent.innerHTML = '';
-
-        // Создаем секции рекомендаций
-        if (channelsData.items?.length) {
-            const channelsSection = document.createElement('div');
-            channelsSection.innerHTML = '<h4>Популярные каналы</h4>';
-            channelsData.items.forEach(project => {
-                const card = createProjectCard(project);
-                channelsSection.appendChild(card);
-            });
-            recommendationsContent.appendChild(channelsSection);
-        }
-
-        if (botsData.items?.length) {
-            const botsSection = document.createElement('div');
-            botsSection.innerHTML = '<h4>Полезные боты</h4>';
-            botsData.items.forEach(project => {
-                const card = createProjectCard(project);
-                botsSection.appendChild(card);
-            });
-            recommendationsContent.appendChild(botsSection);
-        }
-
-        if (appsData.items?.length) {
-            const appsSection = document.createElement('div');
-            appsSection.innerHTML = '<h4>Интересные приложения</h4>';
-            appsData.items.forEach(project => {
-                const card = createProjectCard(project);
-                appsSection.appendChild(card);
-            });
-            recommendationsContent.appendChild(appsSection);
-        }
-
-        if (!channelsData.items?.length && !botsData.items?.length && !appsData.items?.length) {
-            recommendationsContent.innerHTML = '<div class="no-results">Рекомендации временно недоступны</div>';
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки рекомендаций:', error);
-        recommendationsContent.innerHTML = '<div class="no-results">Ошибка загрузки рекомендаций</div>';
-    }
-}
-
-// Создание карточки проекта (без лайков)
+// Создание карточки проекта с исправленным отображением подписчиков
 function createProjectCard(project) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -375,29 +555,35 @@ function createProjectCard(project) {
 
     // Определение URL для иконки
     let iconHtml = '';
-    if (project.avatar_url) {
-        iconHtml = `<img src="${project.avatar_url}" alt="${project.title}" class="channel-icon">`;
+    if (project.icon || project.avatar_url) {
+        const iconUrl = project.icon || project.avatar_url;
+        iconHtml = `<img src="${iconUrl}" alt="${project.name || project.title}" class="channel-icon">`;
     } else {
-        const firstLetter = project.title.charAt(0).toUpperCase();
+        const firstLetter = (project.name || project.title || '').charAt(0).toUpperCase() || 'T';
         iconHtml = `<div class="channel-letter-badge">${firstLetter}</div>`;
     }
+
+    const projectName = project.name || project.title || 'Без названия';
+    const projectDescription = project.description || project.theme || 'Описание недоступно';
+    const projectUrl = project.url || project.link || '#';
+    
+    // Поддерживаем разные поля для количества подписчиков
+    const subscribersCount = project.subscribers || project.subscribers_count || project.likes || 0;
 
     card.innerHTML = `
         ${project.is_premium ? '<div class="premium-badge">Premium</div>' : ''}
         <div class="card-content">
-            <a href="${project.url}" target="_blank" class="channel-clickable-area" data-url="${project.url}">
+            <a href="${projectUrl}" target="_blank" class="channel-clickable-area" data-url="${projectUrl}">
                 <div class="channel-icon-container">
                     ${iconHtml}
                     <div class="channel-info">
-                        <h3>${project.title}</h3>
-                        <p>${project.description}</p>
+                        <h3>${projectName}</h3>
+                        <p>${projectDescription}</p>
                     </div>
                 </div>
             </a>
             <div class="subscribers-mini">
-                <span class="subscribers-badge">
-                    👥 ${formatNumber(project.subscribers_count || 0)}
-                </span>
+                <span class="subscribers-badge">👥 ${formatNumber(subscribersCount)}</span>
             </div>
         </div>
     `;
@@ -412,13 +598,13 @@ function createProjectCard(project) {
             tg.sendData(JSON.stringify({
                 action: 'open_project',
                 project_id: project.id,
-                project_title: project.title,
-                project_url: project.url
+                project_title: projectName,
+                project_url: projectUrl
             }));
         }
         
         // Открываем ссылку
-        window.open(project.url, '_blank');
+        window.open(projectUrl, '_blank');
     });
 
     return card;
@@ -467,6 +653,11 @@ function initializeTabs() {
     const tabs = document.querySelectorAll('.bottom-tab');
 
     function switchTab(tabName) {
+        // Возвращаемся на главную если находимся в категории
+        if (document.getElementById('category-tab').classList.contains('active')) {
+            goBackToSearch();
+        }
+
         // Скрываем все вкладки
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
@@ -488,16 +679,18 @@ function initializeTabs() {
         }
 
         // Показываем/скрываем строку поиска в зависимости от вкладки
-        if (tabName === 'settings') {
-            searchContainer.classList.add('hidden');
-        } else {
-            searchContainer.classList.remove('hidden');
+        if (searchContainer) {
+            if (tabName === 'settings') {
+                searchContainer.classList.add('hidden');
+            } else {
+                searchContainer.classList.remove('hidden');
+            }
         }
 
         // Загружаем контент для вкладки
         if (tabName === 'search') {
             showMainTab();
-            loadFeaturedContent();
+            loadContentSections();
             loadCategories();
         } else if (tabName === 'recommendations') {
             loadRecommendations();
@@ -529,40 +722,68 @@ function debounce(func, wait) {
 
 // Обработка поиска
 const debouncedSearch = debounce(() => {
-    const query = searchInput.value.trim();
-    if (query.length > 0 || currentFilter !== 'все' || currentSubcategory) {
-        loadProjects(currentContentType);
+    const query = searchInput?.value?.trim() || '';
+    
+    if (isInCategoryPage) {
+        // Если мы на странице категории, перезагружаем её с учетом поиска
+        categoryPage = 0;
+        categoryHasMore = true;
+        loadCategoryContent();
     } else {
-        showMainTab();
+        // Иначе обрабатываем как обычный поиск
+        if (query.length > 0 || currentFilter !== 'все' || currentSubcategory) {
+            loadProjects(currentContentType);
+        } else {
+            showMainTab();
+        }
     }
 }, 300);
 
 // Обработка фильтра
 function handleFilterToggle() {
-    filterModal.classList.add('show');
-    document.body.style.overflow = 'hidden'; // Предотвращаем прокрутку фона
+    if (filterModal) {
+        // Скрываем/показываем секцию выбора типа контента в зависимости от того, где мы находимся
+        const contentTypeSection = document.querySelector('.filter-section:first-child');
+        if (contentTypeSection) {
+            if (isInCategoryPage) {
+                contentTypeSection.classList.add('hidden');
+            } else {
+                contentTypeSection.classList.remove('hidden');
+            }
+        }
+        
+        filterModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function handleFilterClose() {
-    filterModal.classList.add('closing');
-    
-    // Дожидаемся завершения анимации перед скрытием
-    setTimeout(() => {
-        filterModal.classList.remove('show', 'closing');
-        document.body.style.overflow = ''; // Возвращаем прокрутку
-    }, 400); // Время соответствует продолжительности анимации
+    if (filterModal) {
+        filterModal.classList.add('closing');
+        
+        setTimeout(() => {
+            filterModal.classList.remove('show', 'closing');
+            document.body.style.overflow = '';
+        }, 400);
+    }
 }
 
 function handleFilterReset() {
     // Сбрасываем все фильтры
     currentFilter = 'все';
-    currentContentType = 'all';
+    if (!isInCategoryPage) {
+        currentContentType = 'all';
+    }
     currentSortBy = 'subscribers';
     currentSubcategory = null;
     
     // Сбрасываем UI
-    document.querySelector('input[name="contentType"][value="all"]').checked = true;
-    document.querySelector('input[name="sortBy"][value="subscribers"]').checked = true;
+    if (!isInCategoryPage) {
+        const contentTypeAll = document.querySelector('input[name="contentType"][value="all"]');
+        if (contentTypeAll) contentTypeAll.checked = true;
+    }
+    const sortBySubscribers = document.querySelector('input[name="sortBy"][value="subscribers"]');
+    if (sortBySubscribers) sortBySubscribers.checked = true;
     
     // Сбрасываем категории
     document.querySelectorAll('.filter-category-item').forEach(item => {
@@ -571,17 +792,21 @@ function handleFilterReset() {
     document.querySelectorAll('.filter-subcategories').forEach(sub => {
         sub.classList.remove('show');
     });
-    document.querySelector('.filter-category-item[data-category="все"]').classList.add('selected');
+    const allCategory = document.querySelector('.filter-category-item[data-category="все"]');
+    if (allCategory) allCategory.classList.add('selected');
 }
 
 function handleFilterApply() {
     // Получаем выбранные значения
-    const contentTypeInput = document.querySelector('input[name="contentType"]:checked');
     const sortByInput = document.querySelector('input[name="sortBy"]:checked');
     const selectedCategory = document.querySelector('.filter-category-item.selected:not(.subcategory)');
     const selectedSubcategory = document.querySelector('.filter-subcategory-item.selected');
     
-    if (contentTypeInput) currentContentType = contentTypeInput.value;
+    if (!isInCategoryPage) {
+        const contentTypeInput = document.querySelector('input[name="contentType"]:checked');
+        if (contentTypeInput) currentContentType = contentTypeInput.value;
+    }
+    
     if (sortByInput) currentSortBy = sortByInput.value;
     
     if (selectedSubcategory) {
@@ -596,7 +821,13 @@ function handleFilterApply() {
     handleFilterClose();
     
     // Применяем фильтры
-    loadProjects(currentContentType);
+    if (isInCategoryPage) {
+        categoryPage = 0;
+        categoryHasMore = true;
+        loadCategoryContent();
+    } else {
+        loadProjects(currentContentType);
+    }
 }
 
 // Создание категорий в фильтре
@@ -695,28 +926,21 @@ function initializeFilter() {
 function handleSettingsClick(settingType) {
     console.log(`Clicked on setting: ${settingType}`);
     
-    // Здесь можно добавить логику для каждого типа настроек
     switch (settingType) {
         case 'notifications':
-            // Логика для уведомлений
             break;
         case 'theme':
-            // Логика для темы
             break;
         case 'language':
-            // Логика для языка
             break;
         case 'support':
-            // Открыть бота поддержки
             if (tg.openTelegramLink) {
                 tg.openTelegramLink('https://t.me/support_bot');
             }
             break;
         case 'faq':
-            // Открыть FAQ
             break;
         case 'privacy':
-            // Открыть политику конфиденциальности
             break;
     }
 }
@@ -731,15 +955,19 @@ function scrollToTop() {
 
 // Обработка скролла для кнопки "Наверх"
 function handleScroll() {
-    if (window.pageYOffset > 300) {
-        toTopBtn.style.display = 'block';
-    } else {
-        toTopBtn.style.display = 'none';
+    if (toTopBtn) {
+        if (window.pageYOffset > 300) {
+            toTopBtn.style.display = 'block';
+        } else {
+            toTopBtn.style.display = 'none';
+        }
     }
 }
 
 // Инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing app...');
+    
     initializeTabs();
     initializeFilter();
     
@@ -768,26 +996,42 @@ document.addEventListener('DOMContentLoaded', function() {
         toTopBtn.addEventListener('click', scrollToTop);
     }
     
+    if (backButton) {
+        backButton.addEventListener('click', goBackToSearch);
+    }
+
+    // Обработчики кликов по заголовкам секций
+    document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const type = header.dataset.type;
+            if (type) {
+                openCategoryPage(type);
+            }
+        });
+    });
+    
     // Обработка скролла
     window.addEventListener('scroll', handleScroll);
     
     // Плавное закрытие модала при клике на задний фон
-    filterModal.addEventListener('click', (e) => {
-        if (e.target === filterModal) {
-            handleFilterClose();
-        }
-    });
-    
-    // Предотвращаем закрытие при клике на контент модала
-    const modalContent = document.querySelector('.filter-modal-content');
-    if (modalContent) {
-        modalContent.addEventListener('click', (e) => {
-            e.stopPropagation();
+    if (filterModal) {
+        filterModal.addEventListener('click', (e) => {
+            if (e.target === filterModal) {
+                handleFilterClose();
+            }
         });
+        
+        // Предотвращаем закрытие при клике на контент модала
+        const modalContent = document.querySelector('.filter-modal-content');
+        if (modalContent) {
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     }
     
     // Загружаем контент первой вкладки
-    loadFeaturedContent();
+    loadContentSections();
     loadCategories();
     
     // Готовность приложения

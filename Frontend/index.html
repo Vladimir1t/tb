@@ -9,6 +9,16 @@
 </head>
 <body>
     <div class="container">
+        <!-- Заголовок с навигацией назад -->
+        <div class="page-header" id="pageHeader" style="display: none;">
+            <div class="back-button" id="backButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H6m6-7-7 7 7 7"/>
+                </svg>
+            </div>
+            <h2 id="pageTitle">Поиск</h2>
+        </div>
+
         <!-- Поисковая строка в верхней части (только для поиска и рекомендаций) -->
         <div class="search-container" id="searchContainer">
             <div class="search-bar">
@@ -35,9 +45,43 @@
 
         <!-- Контент вкладок -->
         <div class="tab-content active" id="search-tab">
-            <div class="featured-section">
-                <h3>Популярное</h3>
-                <div id="featuredContent"></div>
+            <!-- Блоки контента -->
+            <div class="content-sections">
+                <div class="content-section" id="channels-section">
+                    <div class="section-header" data-type="channel">
+                        <h3>📺 Каналы</h3>
+                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="content-grid" id="channelsContent">
+                        <div class="loading">Загрузка каналов...</div>
+                    </div>
+                </div>
+
+                <div class="content-section" id="bots-section">
+                    <div class="section-header" data-type="bot">
+                        <h3>🤖 Боты</h3>
+                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="content-grid" id="botsContent">
+                        <div class="loading">Загрузка ботов...</div>
+                    </div>
+                </div>
+
+                <div class="content-section" id="apps-section">
+                    <div class="section-header" data-type="mini_app">
+                        <h3>📱 Мини-приложения</h3>
+                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                    <div class="content-grid" id="appsContent">
+                        <div class="loading">Загрузка приложений...</div>
+                    </div>
+                </div>
             </div>
             
             <div class="categories-section">
@@ -127,6 +171,13 @@
                     </div>
                     <div class="settings-item-arrow">›</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Страница категории с бесконечной подгрузкой -->
+        <div class="tab-content" id="category-tab" style="display: none;">
+            <div id="categoryContent">
+                <!-- Контент будет добавлен через JavaScript -->
             </div>
         </div>
 
