@@ -2,10 +2,12 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // Инициализация темы и пользователя
-initializeTelegramTheme();
-initializeUserProfile();
+// initializeTelegramTheme();
+// initializeUserProfile();
 
-const API_URL = 'https://tcatalogbot.ru/api';
+const API_URL = 
+// 'http://localhost:8000';
+'https://tcatalogbot.ru/api';
 window.API_URL = API_URL; // Делаем доступным для survey.js
 
 const urlParams = new URLSearchParams(window.location.search);
