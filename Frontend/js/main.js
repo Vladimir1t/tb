@@ -6,6 +6,15 @@ initializeTelegramTheme();
 initializeUserProfile();
 
 const API_URL = 'https://tcatalogbot.ru/api';
+window.API_URL = API_URL; // Делаем доступным для survey.js
+
+const urlParams = new URLSearchParams(window.location.search);
+const debugUserParam = urlParams.get('debug_user');
+const parsedDebugUser = debugUserParam ? parseInt(debugUserParam, 10) : null;
+const DEBUG_USER_ID = Number.isFinite(parsedDebugUser) ? parsedDebugUser : null;
+
+window.DEBUG_USER_ID = DEBUG_USER_ID;
+
 let searchTimeout;
 let currentFilter = 'все';
 let currentContentType = 'all';
@@ -19,6 +28,7 @@ let categoryPage = 0;
 let categoryHasMore = true;
 let categoryLoading = false;
 let isInCategoryPage = false;
+let survey = null; // Инициализация опросника
 
 const toTopBtn = document.getElementById('toTopBtn');
 const searchInput = document.getElementById('searchInput');
@@ -96,7 +106,7 @@ function initializeTelegramTheme() {
 
 // Инициализация профиля пользователя
 function initializeUserProfile() {
-    const user = tg.initDataUnsafe?.user;
+    const user = tg?.initDataUnsafe?.user;
     
     if (user) {
         const userNameElement = document.getElementById('userName');
@@ -964,9 +974,42 @@ function handleScroll() {
     }
 }
 
+// Проверка статуса опроса и показ опросника для новых пользователей
+async function checkSurveyStatus() {
+    const userId = tg?.initDataUnsafe?.user?.id ?? window.DEBUG_USER_ID;
+    
+    if (!userId) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/survey_status`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Показываем опросник если он еще не был пройден
+            if (!data.survey_completed && survey) {
+                survey.show();
+            }
+        }
+    } catch (error) {
+        console.error('Error checking survey status:', error);
+    }
+}
+
 // Инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
+
+    // Инициализируем опросник
+    if (window.Survey) {
+        try {
+            survey = new window.Survey();
+        } catch (error) {
+            console.error('Error creating Survey object:', error);
+        }
+    }
     
     initializeTabs();
     initializeFilter();
@@ -1036,4 +1079,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Готовность приложения
     tg.ready();
+    
+    // Проверяем статус опроса после загрузки приложения
+    checkSurveyStatus();
 });

@@ -281,6 +281,56 @@
 
     <button class="to-top-btn" id="toTopBtn">↑</button>
 
+    <!-- Опросник для новых пользователей -->
+    <div class="survey-overlay" id="surveyOverlay" style="display: none;">
+        <div class="survey-container">
+            <!-- Экран 1: Основные темы -->
+            <div class="survey-screen active" id="surveyScreen1">
+                <div class="survey-header">
+                    <h2>Выберите интересные темы</h2>
+                    <p class="survey-subtitle">Мы подберем для вас лучшие каналы</p>
+                </div>
+                
+                <div class="survey-counter">
+                    <span id="selectedCount">0</span>/7
+                </div>
+                
+                <div class="survey-chips" id="mainTopicsChips">
+                    <!-- Чипсы будут добавлены через JS -->
+                </div>
+                
+                <div class="survey-actions">
+                    <button class="survey-btn survey-btn-secondary" id="surveySkipBtn">Пропустить</button>
+                    <button class="survey-btn survey-btn-primary" id="surveyNextBtn" disabled>Готово</button>
+                </div>
+            </div>
+            
+            <!-- Экран 2: Уточнение тем -->
+            <div class="survey-screen" id="surveyScreen2" style="display: none;">
+                <div class="survey-header">
+                    <button class="survey-back-btn" id="surveyBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H6m6-7-7 7 7 7"/>
+                        </svg>
+                    </button>
+                    <div>
+                        <h2>Уточните интересы</h2>
+                        <p class="survey-subtitle">Выберите что вам интересно</p>
+                    </div>
+                </div>
+                
+                <div class="survey-sections" id="surveySubTopics">
+                    <!-- Секции подтем будут добавлены через JS -->
+                </div>
+                
+                <div class="survey-actions">
+                    <button class="survey-btn survey-btn-primary survey-btn-full" id="surveyCompleteBtn">Завершить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/survey.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

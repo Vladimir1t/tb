@@ -19,6 +19,13 @@ class User(BaseModel):
     stars: int = 0
     balance: float = 0
     projects_count: int = 0
+    preferences: Optional[str] = None
+    survey_completed: bool = False
 
     class Config:
         json_encoders = {type(None): lambda _: None}
+
+class UserPreferences(BaseModel):
+    user_id: int
+    main_topics: list[str] = []
+    sub_topics: list[str] = []
