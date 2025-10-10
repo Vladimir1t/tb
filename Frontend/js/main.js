@@ -2,8 +2,8 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // Инициализация темы и пользователя
-initializeTelegramTheme();
-// initializeUserProfile();
+// initializeTelegramTheme();
+initializeUserProfile();
 
 const API_URL = 
 // 'http://localhost:8000';
