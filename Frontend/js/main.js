@@ -2,13 +2,13 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // Инициализация темы и пользователя
-initializeTelegramTheme();
+// initializeTelegramTheme();
 initializeUserProfile();
 
 const API_URL = 
-// 'http://localhost:8000';
 'https://tcatalogbot.ru/api';
-window.API_URL = API_URL; // Делаем доступным для survey.js
+// 'http://localhost:8000';
+window.API_URL = API_URL; 
 
 const urlParams = new URLSearchParams(window.location.search);
 const debugUserParam = urlParams.get('debug_user');
