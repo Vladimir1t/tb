@@ -1427,27 +1427,27 @@ body {
     margin-bottom: 0;
 }
 
-/* Bottom Navigation - ИСПРАВЛЕНО: от края до края, без закруглений, только цветовой акцент */
+/* ФИКС: Нижнее меню без щелей от краев экрана */
 .bottom-tabs {
     position: fixed;
-    bottom: 0 /* var(--space-12)*/ ; /* ФИКС: приподнято от нижнего края */
+    bottom: 0; /* ФИКС: убираем отступ, меню прилегает к низу */
     left: 0;
     right: 0;
-    max-width: none; /* ФИКС: убрали ограничение ширины - от края до края */
-    margin: 0; /* ФИКС: убрали автоматические отступы */
+    max-width: none;
+    margin: 0;
     display: flex;
     justify-content: space-around;
     align-items: center;
     background-color: var(--color-surface);
-    box-shadow: var(--shadow-lg);
-    border-radius: 0; /* ФИКС: убрали все закругления */
-    padding: var(--space-8) 0; /* ФИКС: убрали боковые отступы */
+    box-shadow: var(--shadow-xs);
+    border-radius: 0; /* без закруглений */
+    padding: var(--space-8) 0; /* убираем боковые отступы */
     box-sizing: border-box;
     z-index: 1000;
-    border: 1px solid var(--color-card-border);
-    border-left: none; /* ФИКС: убираем боковые границы */
-    border-right: none; /* ФИКС: убираем боковые границы */
+    border-top: 1px solid var(--color-border);
     backdrop-filter: blur(20px);
+    /* ФИКС: используем ваши CSS переменные для высоты */
+    min-height: 60px;
 }
 
 .bottom-tab {
