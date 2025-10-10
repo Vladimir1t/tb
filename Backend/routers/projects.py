@@ -84,76 +84,120 @@ async def get_projects(
         query = "SELECT * FROM projects WHERE 1=1"
         params = []
 
-        semantic_ids = []
-        fallback_search = False
+        semantic_ids_smart = []
+        semantic_ids_theme = []
+        fallback_smart_search = False
+        fallback_theme_search = False
         
+        # ОБРАБОТКА SMART_SEARCH (по всем полям)
         if smart_search:
-            print(f"🔍 Smart search: '{smart_search}' (offset: {offset}, limit: {limit})")
+            print(f"🔍 Smart search: '{smart_search}'")
             
-            cache_key = f"{smart_search}_{use_synonyms}_{spell_check}_{similarity_threshold}"
-            if cache_key not in _search_cache or time.time() - _search_cache[cache_key]['timestamp'] > _CACHE_TTL:
-                semantic_ids_list = perform_search_once(smart_search, use_synonyms, spell_check, similarity_threshold)
+            cache_key_smart = f"smart_{smart_search}_{use_synonyms}_{spell_check}_{similarity_threshold}"
+            if cache_key_smart not in _search_cache or time.time() - _search_cache[cache_key_smart]['timestamp'] > _CACHE_TTL:
+                semantic_results_smart = perform_search_once(smart_search, use_synonyms, spell_check, similarity_threshold)
                 with _cache_lock:
-                    _search_cache[cache_key] = {
-                        'ids': semantic_ids_list,
+                    _search_cache[cache_key_smart] = {
+                        'ids': semantic_results_smart,
                         'timestamp': time.time()
                     }
             else:
-                semantic_ids_list = _search_cache[cache_key]['ids']
-                print(f"📦 Using cached search results ({len(semantic_ids_list)} items)")
+                semantic_results_smart = _search_cache[cache_key_smart]['ids']
+                print(f"📦 Using cached smart search results ({len(semantic_results_smart)} items)")
             
-            semantic_ids = list(semantic_ids_list)
+            semantic_ids_smart = list(semantic_results_smart)
             
-            if semantic_ids:
-                start_idx = offset
-                end_idx = offset + limit
-                paginated_ids = semantic_ids[start_idx:end_idx]
-                
-                if paginated_ids:
-                    placeholders = ','.join('?' * len(paginated_ids))
-                    query += f" AND id IN ({placeholders})"
-                    params.extend(paginated_ids)
-                    print(f"📄 Pagination: {start_idx}-{end_idx} of {len(semantic_ids)}")
-                else:
-                    query += " AND 1=0"
-            else:
-                print("❌ No results from semantic search, using fallback...")
-                fallback_search = True
-                query += " AND (ilike(?, name) OR ilike(?, theme))"
+            if not semantic_ids_smart:
+                print("❌ No results from smart search, using fallback...")
+                fallback_smart_search = True
+                query += " AND (ilike(?, name) OR ilike(?, theme) OR ilike(?, type))"
                 like_pattern = f"%{smart_search}%"
-                params.extend([like_pattern, like_pattern])
-
+                params.extend([like_pattern, like_pattern, like_pattern])
+        
+        # ОБРАБОТКА THEME (только по темам с smart search)
+        if theme:
+            print(f"🎨 Theme smart search: '{theme}'")
+            
+            cache_key_theme = f"theme_{theme}_{use_synonyms}_{spell_check}_{similarity_threshold}"
+            if cache_key_theme not in _search_cache or time.time() - _search_cache[cache_key_theme]['timestamp'] > _CACHE_TTL:
+                semantic_results_theme = perform_search_once(theme, use_synonyms, spell_check, similarity_threshold)
+                with _cache_lock:
+                    _search_cache[cache_key_theme] = {
+                        'ids': semantic_results_theme,
+                        'timestamp': time.time()
+                    }
+            else:
+                semantic_results_theme = _search_cache[cache_key_theme]['ids']
+                print(f"📦 Using cached theme search results ({len(semantic_results_theme)} items)")
+            
+            semantic_ids_theme = list(semantic_results_theme)
+            
+            if not semantic_ids_theme:
+                print("❌ No results from theme search, using fallback...")
+                fallback_theme_search = True
+                query += " AND ilike(?, theme)"
+                like_pattern = f"%{theme}%"
+                params.append(like_pattern)
+        
+        # ОБРАБОТКА REGULAR SEARCH
         elif search:
             print(f"🔍 Regular search: '{search}'")
             query += " AND (ilike(?, name) OR ilike(?, theme) OR ilike(?, type))"
             like_pattern = f"%{search}%"
             params.extend([like_pattern, like_pattern, like_pattern])
 
+        # ПРИМЕНЕНИЕ SEMANTIC IDS ЕСЛИ ЕСТЬ РЕЗУЛЬТАТЫ
+        semantic_ids_to_use = []
+        
+        if semantic_ids_smart and semantic_ids_theme:
+            # ПЕРЕСЕЧЕНИЕ: проекты должны удовлетворять ОБОИМ условиям
+            semantic_ids_to_use = list(set(semantic_ids_smart) & set(semantic_ids_theme))
+            print(f"🎯 Combined smart + theme search: {len(semantic_ids_smart)} smart ∩ {len(semantic_ids_theme)} theme = {len(semantic_ids_to_use)} projects")
+            
+        elif semantic_ids_smart:
+            # Только smart search
+            semantic_ids_to_use = semantic_ids_smart
+            print(f"🎯 Using smart search results: {len(semantic_ids_to_use)} projects")
+            
+        elif semantic_ids_theme:
+            # Только theme search
+            semantic_ids_to_use = semantic_ids_theme
+            print(f"🎯 Using theme search results: {len(semantic_ids_to_use)} projects")
+        
+        # ДОБАВЛЯЕМ SEMANTIC IDS В ЗАПРОС
+        if semantic_ids_to_use:
+            start_idx = offset
+            end_idx = offset + limit
+            paginated_ids = semantic_ids_to_use[start_idx:end_idx]
+            
+            if paginated_ids:
+                placeholders = ','.join('?' * len(paginated_ids))
+                query += f" AND id IN ({placeholders})"
+                params.extend(paginated_ids)
+                print(f"📄 Pagination: {start_idx}-{end_idx} of {len(semantic_ids_to_use)}")
+            else:
+                query += " AND 1=0"
+
+        # ФИЛЬТР ПО TYPE (применяется всегда если указан)
         if type:
             type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
             normalized_type = type_mapping.get(type.lower(), type.lower())
             query += " AND ilike(?, type)"
             params.append(normalized_type)
-        
-        if theme:
-            query += " AND (ilike(?, name) OR ilike(?, theme))"
-            like_pattern = f"%{theme}%"
-            params.extend([like_pattern, like_pattern])
 
-        if smart_search and semantic_ids and not fallback_search:
-            # Для пагинированных ID сохраняем порядок из семантического поиска
-            if paginated_ids:
-                order_case = "CASE "
-                for i, project_id in enumerate(paginated_ids):
-                    order_case += f"WHEN id = {project_id} THEN {i} "
-                order_case += f"ELSE {len(paginated_ids)} END"
-                query += f" ORDER BY {order_case}"
-            else:
-                query += " ORDER BY is_premium DESC, likes DESC"
+        # СОРТИРОВКА
+        if semantic_ids_to_use and paginated_ids:
+            # Сохраняем порядок из семантического поиска для пагинированных ID
+            order_case = "CASE "
+            for i, project_id in enumerate(paginated_ids):
+                order_case += f"WHEN id = {project_id} THEN {i} "
+            order_case += f"ELSE {len(paginated_ids)} END"
+            query += f" ORDER BY {order_case}"
         else:
             query += " ORDER BY is_premium DESC, likes DESC"
 
-        if not smart_search or fallback_search:
+        # ПАГИНАЦИЯ для случаев без semantic results или при fallback
+        if (not semantic_ids_to_use or not paginated_ids) and (not smart_search or fallback_smart_search) and (not theme or fallback_theme_search):
             query += " LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 

@@ -107,7 +107,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[],
+    allow_origins=["*"], # тут поменять для сервака
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -118,9 +118,9 @@ async def health_check():
     """Простой health check"""
     return {"status": "healthy", "message": "Server is running"}
 
-app.include_router(projects.router, prefix="/api", tags=["Projects"])
-app.include_router(users.router, prefix="/api", tags=["Users"])
-app.include_router(debug.router, prefix="/api", tags=["Debug"])
+app.include_router(projects.router, tags=["Projects"]) # тут поменять для сервака
+app.include_router(users.router, tags=["Users"])       # тут поменять для сервака
+app.include_router(debug.router, tags=["Debug"])       # тут поменять для сервака
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
