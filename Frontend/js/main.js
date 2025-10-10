@@ -207,8 +207,14 @@ async function openCategoryPage(type) {
     addInfiniteScroll();
 }
 
-// Загрузка контента категории с пагинацией (с поддержкой поиска и фильтра)
+// ФИКС: Обновляем существующую функцию loadCategoryContent для поддержки тематических категорий
 async function loadCategoryContent(append = false) {
+    // Если это тематическая категория, используем специальную функцию
+    if (currentCategoryType === 'theme') {
+        return await loadThemeCategoryContent(append);
+    }
+
+    // Оригинальная логика для типовых категорий (каналы, боты, мини-приложения)
     if (categoryLoading || (!categoryHasMore && append)) return;
     
     categoryLoading = true;
@@ -222,12 +228,10 @@ async function loadCategoryContent(append = false) {
         const query = searchInput?.value?.trim() || '';
         let themeFilter = currentFilter === 'все' ? '' : currentFilter;
         
-        // Если выбрана подкатегория, используем её вместо основной категории
         if (currentSubcategory) {
             themeFilter = currentSubcategory;
         }
 
-        // Строим URL с поддержкой умного поиска и фильтров
         const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
         const themeParam = themeFilter ? `&theme=${encodeURIComponent(themeFilter)}` : '';
         
@@ -243,7 +247,6 @@ async function loadCategoryContent(append = false) {
             if (!append) {
                 categoryContent.innerHTML = '';
             } else {
-                // Убираем индикатор загрузки
                 const loadingElement = categoryContent.querySelector('.scroll-loading');
                 if (loadingElement) {
                     loadingElement.remove();
@@ -531,6 +534,7 @@ async function loadRecommendations() {
 }
 
 // Загрузка категорий
+// ФИКС: Загрузка категорий с переходом на отдельные страницы
 function loadCategories() {
     const categoriesGrid = document.getElementById('categoriesGrid');
     if (!categoriesGrid) return;
@@ -553,27 +557,139 @@ function loadCategories() {
             <div class="category-item-title">${category.title}</div>
         `;
         
+        // ФИКС: Добавляем обработчик для открытия страницы категории
         categoryItem.addEventListener('click', () => {
-            currentFilter = category.value;
-            currentSubcategory = null; // Сбрасываем подкатегорию при выборе основной категории
-            
-            // ФИКС: Полностью сбрасываем данные при смене категории
-            page = 0;
-            hasMore = true;
-            categoryPage = 0;
-            categoryHasMore = true;
-            
-            // Если мы на странице категории, обновляем её
-            if (isInCategoryPage) {
-                loadCategoryContent();
-            } else {
-                // Иначе загружаем результаты поиска
-                loadProjects(currentContentType);
-            }
+            openThemeCategoryPage(category.value, category.title);
         });
         
         categoriesGrid.appendChild(categoryItem);
     });
+}
+
+// ФИКС: Новая функция для открытия страницы тематической категории
+async function openThemeCategoryPage(categoryValue, categoryTitle) {
+    currentFilter = categoryValue;
+    currentSubcategory = null;
+    currentCategoryType = 'theme'; // Специальный тип для тематических категорий
+    categoryPage = 0;
+    categoryHasMore = true;
+    categoryLoading = false;
+    isInCategoryPage = true;
+
+    // Показываем заголовок с кнопкой назад
+    pageHeader.style.display = 'flex';
+    pageTitle.textContent = categoryTitle;
+
+    // Скрываем основные вкладки и показываем страницу категории
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    const categoryTab = document.getElementById('category-tab');
+    categoryTab.classList.add('active');
+    categoryTab.style.display = 'block';
+
+    // Создаем контейнер для контента
+    const categoryContent = document.getElementById('categoryContent');
+    categoryContent.innerHTML = '<div class="scroll-loading">Загрузка...</div>';
+
+    // Загружаем первую порцию данных
+    await loadThemeCategoryContent();
+
+    // Добавляем обработчик бесконечного скролла
+    addInfiniteScroll();
+}
+
+// ФИКС: Загрузка контента тематической категории
+async function loadThemeCategoryContent(append = false) {
+    if (categoryLoading || (!categoryHasMore && append)) return;
+    
+    categoryLoading = true;
+    const categoryContent = document.getElementById('categoryContent');
+
+    if (!append) {
+        categoryContent.innerHTML = '<div class="scroll-loading">Загрузка...</div>';
+    }
+
+    try {
+        const query = searchInput?.value?.trim() || '';
+        let themeFilter = currentFilter === 'все' ? '' : currentFilter;
+        
+        // Если выбрана подкатегория, используем её вместо основной категории
+        if (currentSubcategory) {
+            themeFilter = currentSubcategory;
+        }
+
+        // Загружаем смешанный контент из всех типов с данной тематикой
+        const types = ['channel', 'bot', 'mini_app'];
+        let allResults = [];
+
+        // Собираем данные из всех типов контента
+        for (const type of types) {
+            try {
+                const searchParam = query ? `&smart_search=${encodeURIComponent(query)}` : '';
+                const themeParam = themeFilter ? `&theme=${encodeURIComponent(themeFilter)}` : '';
+                
+                const apiUrl = `${API_URL}/projects/?type=${type}${themeParam}${searchParam}&limit=4&offset=${Math.floor(categoryPage * 4 / 3)}`;
+                
+                const response = await fetch(apiUrl);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        allResults.push(...data.slice(0, 3)); // Берем не более 3 элементов каждого типа
+                    }
+                }
+            } catch (error) {
+                console.error(`Ошибка загрузки ${type}:`, error);
+            }
+        }
+
+        // Перемешиваем результаты для разнообразия
+        allResults.sort(() => Math.random() - 0.5);
+
+        if (!append) {
+            categoryContent.innerHTML = '';
+        } else {
+            // Убираем индикатор загрузки
+            const loadingElement = categoryContent.querySelector('.scroll-loading');
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+        }
+
+        if (allResults.length > 0) {
+            // Берем только нужное количество элементов для данной страницы
+            const itemsToShow = allResults.slice(0, 10);
+            
+            itemsToShow.forEach(project => {
+                const card = createProjectCard(project);
+                categoryContent.appendChild(card);
+            });
+
+            categoryPage++;
+            categoryHasMore = allResults.length >= 10;
+            
+            if (categoryHasMore) {
+                const loadingElement = document.createElement('div');
+                loadingElement.className = 'scroll-loading';
+                loadingElement.textContent = 'Загрузка еще...';
+                categoryContent.appendChild(loadingElement);
+            }
+        } else {
+            if (categoryPage === 0) {
+                categoryContent.innerHTML = '<div class="no-results">Контент по данной тематике недоступен</div>';
+            }
+            categoryHasMore = false;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки тематической категории:', error);
+        if (categoryPage === 0) {
+            categoryContent.innerHTML = '<div class="no-results">Ошибка загрузки данных</div>';
+        }
+    } finally {
+        categoryLoading = false;
+    }
 }
 
 // ФИКС: Создание карточки проекта без подписчиков для ботов
