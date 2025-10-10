@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // Инициализация темы и пользователя
-// initializeTelegramTheme();
+initializeTelegramTheme();
 // initializeUserProfile();
 
 const API_URL = 
