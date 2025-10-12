@@ -2,97 +2,121 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Telegram Catalog</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <!-- Заголовок с навигацией назад -->
+        <!-- iOS-style Page Header -->
         <div class="page-header" id="pageHeader" style="display: none;">
-            <div class="back-button" id="backButton">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 12H6m6-7-7 7 7 7"/>
-                </svg>
-            </div>
-            <h2 id="pageTitle">Поиск</h2>
-        </div>
-
-        <!-- Поисковая строка в верхней части (только для поиска и рекомендаций) -->
-        <div class="search-container" id="searchContainer">
-            <div class="search-bar">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <input type="text" id="searchInput" placeholder="Поиск каналов, ботов, приложений..." />
-            </div>
-            <button class="filter-btn" id="filterBtn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" x2="4" y1="21" y2="14"></line>
-                    <line x1="4" x2="4" y1="10" y2="3"></line>
-                    <line x1="12" x2="12" y1="21" y2="12"></line>
-                    <line x1="12" x2="12" y1="8" y2="3"></line>
-                    <line x1="20" x2="20" y1="21" y2="16"></line>
-                    <line x1="20" x2="20" y1="12" y2="3"></line>
-                    <line x1="1" x2="7" y1="14" y2="14"></line>
-                    <line x1="9" x2="15" y1="8" y2="8"></line>
-                    <line x1="17" x2="23" y1="16" y2="16"></line>
+            <button class="back-button" id="backButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </button>
+            <h1 id="pageTitle" class="page-title">Поиск</h1>
         </div>
 
-        <!-- Контент вкладок -->
+        <!-- Collapsible Search Header -->
+        <div class="search-header" id="searchHeader">
+            <!-- Collapsed Search Button (initially hidden) -->
+            <button class="search-toggle" id="searchToggle" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <span>Поиск</span>
+            </button>
+
+            <!-- Expanded Search Container -->
+            <div class="search-container" id="searchContainer">
+                <div class="search-bar">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Найдите каналы, боты и мини-приложения">
+                </div>
+                <button class="filter-btn" id="filterBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M7 12h10M11 18h2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Tabs -->
         <div class="tab-content active" id="search-tab">
-            <!-- Блоки контента -->
+            <!-- Content Sections with Snap Scrolling -->
             <div class="content-sections">
-                <div class="content-section" id="channels-section">
+                <!-- Каналы -->
+                <div class="content-section">
                     <div class="section-header" data-type="channel">
-                        <h3>📺 Каналы</h3>
-                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"/>
+                        <h2>Каналы</h2>
+                        <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
                         </svg>
                     </div>
-                    <div class="content-grid" id="channelsContent">
+                    <div class="content-grid snap-scroll" id="channelsContent">
                         <div class="loading">Загрузка каналов...</div>
                     </div>
                 </div>
 
-                <div class="content-section" id="bots-section">
+                <!-- Боты -->
+                <div class="content-section">
                     <div class="section-header" data-type="bot">
-                        <h3>🤖 Боты</h3>
-                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"/>
+                        <h2>Боты</h2>
+                        <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
                         </svg>
                     </div>
-                    <div class="content-grid" id="botsContent">
+                    <div class="content-grid snap-scroll" id="botsContent">
                         <div class="loading">Загрузка ботов...</div>
                     </div>
                 </div>
 
-                <div class="content-section" id="apps-section">
+                <!-- Мини-приложения -->
+                <div class="content-section">
                     <div class="section-header" data-type="mini_app">
-                        <h3>📱 Мини-приложения</h3>
-                        <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"/>
+                        <h2>Мини-приложения</h2>
+                        <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
                         </svg>
                     </div>
-                    <div class="content-grid" id="appsContent">
+                    <div class="content-grid snap-scroll" id="appsContent">
                         <div class="loading">Загрузка приложений...</div>
                     </div>
                 </div>
             </div>
-            
+
+            <!-- Categories Section -->
             <div class="categories-section">
-                <h3>Категории</h3>
-                <div class="categories-grid" id="categoriesGrid"></div>
+                <h2>Категории</h2>
+                <div class="categories-grid" id="categoriesGrid">
+                    <!-- Категории будут загружены динамически -->
+                </div>
             </div>
         </div>
 
+        <!-- Results Tab -->
+        <div class="tab-content" id="results-tab">
+            <div id="resultsContent">
+                <!-- Результаты поиска -->
+            </div>
+        </div>
+
+        <!-- Category Tab -->
+        <div class="tab-content" id="category-tab">
+            <div id="categoryContent">
+                <!-- Контент категории -->
+            </div>
+        </div>
+
+        <!-- Recommendations Tab -->
         <div class="tab-content" id="recommendations-tab">
             <div class="recommendations-section">
-                <h3>Персональные рекомендации</h3>
+                <h2>Персональные рекомендации</h2>
                 <p class="recommendations-subtitle">На основе ваших интересов</p>
                 <div id="recommendationsContent">
                     <div class="loading">Подбираем рекомендации...</div>
@@ -100,131 +124,188 @@
             </div>
         </div>
 
+        <!-- Settings Tab -->
         <div class="tab-content" id="settings-tab">
-            <!-- Профиль пользователя -->
+            <!-- Settings Profile Section -->
             <div class="settings-profile-section">
                 <div class="settings-profile-avatar">
-                    <img id="userAvatar" src="" alt="Avatar" class="avatar-img">
-                    <div id="userInitials" class="avatar-initials"></div>
+                    <img id="userAvatar" class="avatar-img" src="" alt="Аватар">
+                    <div id="userInitials" class="avatar-initials">U</div>
                 </div>
                 <div class="settings-profile-name">
-                    <h2 id="userName" class="profile-name">Пользователь</h2>
+                    <h2 class="profile-name" id="userName">Пользователь</h2>
                 </div>
             </div>
 
-            <!-- Настройки -->
+            <!-- Settings Section -->
             <div class="settings-section">
+                <h3>Настройки</h3>
+                
+                <div class="settings-item" onclick="handleSettingsClick('add-channel')">
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </div>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Добавить канал</div>
+                        <div class="settings-item-subtitle">Предложить новый канал для каталога</div>
+                    </div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+
                 <div class="settings-item" onclick="handleSettingsClick('notifications')">
-                    <div class="settings-item-icon">🔔</div>
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">Уведомления</div>
                         <div class="settings-item-subtitle">Настройка push-уведомлений</div>
                     </div>
-                    <div class="settings-item-arrow">›</div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
-                
+
                 <div class="settings-item" onclick="handleSettingsClick('theme')">
-                    <div class="settings-item-icon">🌙</div>
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                    </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">Тема оформления</div>
                         <div class="settings-item-subtitle">Светлая/темная тема</div>
                     </div>
-                    <div class="settings-item-arrow">›</div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
-                
+
                 <div class="settings-item" onclick="handleSettingsClick('language')">
-                    <div class="settings-item-icon">🌐</div>
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">Язык интерфейса</div>
                         <div class="settings-item-subtitle">Русский</div>
                     </div>
-                    <div class="settings-item-arrow">›</div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
             </div>
 
-            <!-- Справка и поддержка -->
+            <!-- Help Section -->
             <div class="help-section">
                 <h3>Справка и поддержка</h3>
+                
                 <div class="settings-item" onclick="handleSettingsClick('support')">
-                    <div class="settings-item-icon">🤖</div>
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">Бот поддержки</div>
                         <div class="settings-item-subtitle">Связаться с поддержкой</div>
                     </div>
-                    <div class="settings-item-arrow">›</div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
-                
+
                 <div class="settings-item" onclick="handleSettingsClick('faq')">
-                    <div class="settings-item-icon">❓</div>
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <point cx="12" cy="17"/>
+                        </svg>
+                    </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">FAQ</div>
                         <div class="settings-item-subtitle">Часто задаваемые вопросы</div>
                     </div>
-                    <div class="settings-item-arrow">›</div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
-                
+
                 <div class="settings-item" onclick="handleSettingsClick('privacy')">
-                    <div class="settings-item-icon">📝</div>
+                    <div class="settings-item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <circle cx="12" cy="16" r="1"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">Политика конфиденциальности</div>
                         <div class="settings-item-subtitle">Условия использования</div>
                     </div>
-                    <div class="settings-item-arrow">›</div>
+                    <svg class="chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
             </div>
         </div>
-
-        <!-- Страница категории с бесконечной подгрузкой -->
-        <div class="tab-content" id="category-tab" style="display: none;">
-            <div id="categoryContent">
-                <!-- Контент будет добавлен через JavaScript -->
-            </div>
-        </div>
-
-        <!-- Результаты поиска/фильтрации -->
-        <div class="tab-content" id="results-tab" style="display: none;">
-            <div id="resultsContent"></div>
-        </div>
     </div>
 
-    <!-- Нижние вкладки -->
+    <!-- Bottom Navigation -->
     <div class="bottom-tabs">
         <div class="bottom-tab active" data-tab="search">
             <div class="tab-icon-container">
-                <svg class="tab-icon compass-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="tab-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/>
                 </svg>
             </div>
             <span>Поиск</span>
         </div>
+
         <div class="bottom-tab" data-tab="recommendations">
             <div class="tab-icon-container">
-                <svg class="tab-icon checkmark-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6 9 17l-5-5"/>
+                <svg class="tab-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"/>
                 </svg>
             </div>
             <span>Рекомендации</span>
         </div>
+
         <div class="bottom-tab" data-tab="settings">
             <div class="tab-icon-container">
-                <svg class="tab-icon settings-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <svg class="tab-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                 </svg>
             </div>
             <span>Настройки</span>
         </div>
     </div>
 
-    <!-- Модальное окно фильтра -->
+    <!-- Filter Modal -->
     <div class="filter-modal" id="filterModal">
         <div class="filter-modal-content">
             <div class="filter-modal-header">
                 <h3>Фильтры</h3>
-                <button class="filter-modal-close" id="filterModalClose">×</button>
+                <button class="filter-modal-close" id="filterModalClose">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
-            
+
+            <!-- Content Type Filter -->
             <div class="filter-section">
                 <h4>Тип контента</h4>
                 <div class="filter-chips">
@@ -242,95 +323,35 @@
                     </label>
                     <label class="filter-chip">
                         <input type="radio" name="contentType" value="mini_app">
-                        <span>Мини-приложения</span>
+                        <span>Приложения</span>
                     </label>
                 </div>
             </div>
-            
-            <div class="filter-section">
-                <h4>Сортировка</h4>
-                <div class="filter-chips">
-                    <label class="filter-chip">
-                        <input type="radio" name="sortBy" value="subscribers" checked>
-                        <span>По подписчикам</span>
-                    </label>
-                    <label class="filter-chip">
-                        <input type="radio" name="sortBy" value="rating">
-                        <span>По рейтингу</span>
-                    </label>
-                    <label class="filter-chip">
-                        <input type="radio" name="sortBy" value="date">
-                        <span>По дате</span>
-                    </label>
-                </div>
-            </div>
-            
+
+            <!-- Category Filter -->
             <div class="filter-section">
                 <h4>Категория</h4>
                 <div class="filter-categories" id="filterCategories">
-                    <!-- Категории будут добавлены через JavaScript -->
+                    <!-- Categories will be populated dynamically -->
                 </div>
             </div>
-            
+
+            <!-- Actions -->
             <div class="filter-modal-actions">
-                <button class="filter-reset-btn" id="filterResetBtn">Сброс</button>
+                <button class="filter-reset-btn" id="filterResetBtn">Сбросить</button>
                 <button class="filter-apply-btn" id="filterApplyBtn">Применить</button>
             </div>
         </div>
     </div>
 
-    <button class="to-top-btn" id="toTopBtn">↑</button>
+    <!-- To Top Button -->
+    <button class="to-top-btn" id="toTopBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 15l-6-6-6 6"/>
+        </svg>
+    </button>
 
-    <!-- Опросник для новых пользователей -->
-    <div class="survey-overlay" id="surveyOverlay" style="display: none;">
-        <div class="survey-container">
-            <!-- Экран 1: Основные темы -->
-            <div class="survey-screen active" id="surveyScreen1">
-                <div class="survey-header">
-                    <h2>Выберите интересные темы</h2>
-                    <p class="survey-subtitle">Мы подберем для вас лучшие каналы</p>
-                </div>
-                
-                <div class="survey-counter">
-                    <span id="selectedCount">0</span>/7
-                </div>
-                
-                <div class="survey-chips" id="mainTopicsChips">
-                    <!-- Чипсы будут добавлены через JS -->
-                </div>
-                
-                <div class="survey-actions">
-                    <button class="survey-btn survey-btn-secondary" id="surveySkipBtn">Пропустить</button>
-                    <button class="survey-btn survey-btn-primary" id="surveyNextBtn" disabled>Готово</button>
-                </div>
-            </div>
-            
-            <!-- Экран 2: Уточнение тем -->
-            <div class="survey-screen" id="surveyScreen2" style="display: none;">
-                <div class="survey-header">
-                    <button class="survey-back-btn" id="surveyBackBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 12H6m6-7-7 7 7 7"/>
-                        </svg>
-                    </button>
-                    <div>
-                        <h2>Уточните интересы</h2>
-                        <p class="survey-subtitle">Выберите что вам интересно</p>
-                    </div>
-                </div>
-                
-                <div class="survey-sections" id="surveySubTopics">
-                    <!-- Секции подтем будут добавлены через JS -->
-                </div>
-                
-                <div class="survey-actions">
-                    <button class="survey-btn survey-btn-primary survey-btn-full" id="surveyCompleteBtn">Завершить</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="js/survey.js"></script>
-    <script src="js/main.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
