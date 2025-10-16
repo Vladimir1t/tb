@@ -4,3 +4,4 @@ session_1.session
 __pycache__/
 .env
 venv/
+Backend/aggregator.db
