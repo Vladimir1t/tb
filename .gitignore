@@ -1,7 +1,6 @@
-database.db
-channals.db
+Backend/aggregator.db
+aggregator.db
 session_1.session
 __pycache__/
 .env
 venv/
-Backend/aggregator.db
