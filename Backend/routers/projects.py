@@ -165,6 +165,22 @@ async def get_projects(
             print(f"🎯 Using theme search results: {len(semantic_ids_to_use)} projects")
         
         # ДОБАВЛЯЕМ SEMANTIC IDS В ЗАПРОС
+        # ПЕРЕД пагинацией - ОТФИЛЬТРУЕМ ТОЛЬКО БОТОВ
+        if semantic_ids_to_use and type:
+            type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
+            normalized_type = type_mapping.get(type.lower(), type.lower())
+            
+            # Фильтруем semantic_ids_to_use чтобы оставить только ботов
+            filtered_semantic_ids = []
+            for project_id in semantic_ids_to_use:
+                project_info = project_data_cache.get(project_id, {})
+                if project_info.get('type', '').lower() == normalized_type:
+                    filtered_semantic_ids.append(project_id)
+            
+            print(f"🔍 After type filter: {len(filtered_semantic_ids)}/{len(semantic_ids_to_use)} projects are {normalized_type}s")
+            semantic_ids_to_use = filtered_semantic_ids
+
+        # ТЕПЕРЬ применяем пагинацию к отфильтрованным ID
         if semantic_ids_to_use:
             start_idx = offset
             end_idx = offset + limit
@@ -174,9 +190,32 @@ async def get_projects(
                 placeholders = ','.join('?' * len(paginated_ids))
                 query += f" AND id IN ({placeholders})"
                 params.extend(paginated_ids)
-                print(f"📄 Pagination: {start_idx}-{end_idx} of {len(semantic_ids_to_use)}")
+                print(f"📄 Pagination: {start_idx}-{end_idx} of {len(semantic_ids_to_use)} {type} projects")
             else:
                 query += " AND 1=0"
+                print(f"❌ No {type} projects in paginated range")
+
+        print(f"🔍 DEBUG: Checking project types in semantic results...")
+        type_counter = {}
+        for project_id in semantic_ids_to_use[:50]:  # Проверим первые 50
+            project_info = project_data_cache.get(project_id, {})
+            project_type = project_info.get('type', 'unknown')
+            type_counter[project_type] = type_counter.get(project_type, 0) + 1
+
+        print(f"🔍 DEBUG: Project types in semantic results: {type_counter}")
+
+        # Проверим есть ли вообще боты в semantic_ids_to_use
+        bot_ids = []
+        for project_id in semantic_ids_to_use:
+            project_info = project_data_cache.get(project_id, {})
+            if project_info.get('type', '').lower() == 'bot':
+                bot_ids.append(project_id)
+
+        print(f"🔍 DEBUG: Found {len(bot_ids)} bots in semantic results")
+
+        if not bot_ids:
+            print("❌ WARNING: No bots found in semantic search results!")
+            # В этом случае semantic_ids_to_use будет пустым после пагинации
 
         # ФИЛЬТР ПО TYPE (применяется всегда если указан)
         if type:
@@ -202,6 +241,7 @@ async def get_projects(
             params.extend([limit, offset])
 
         print(f"📝 Executing query with {len(params)} params")
+
         cursor.execute(query, params)
         rows = cursor.fetchall()
 
@@ -491,7 +531,7 @@ def spell_aware_semantic_search(query, threshold=0.2, top_k=30):
         similarities.sort(key=lambda x: x[1], reverse=True)
         scores = [score for _, score, _, _ in similarities]
         
-        if len(scores) > 5:
+        if len(scores) > 2:
             top_score = scores[0]
             
             # Динамический порог: минимум 60% от лучшего результата
