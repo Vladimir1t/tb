@@ -49,7 +49,7 @@
             <div class="content-sections">
                 <div class="content-section" id="channels-section">
                     <div class="section-header" data-type="channel">
-                        <h3>📺 Каналы</h3>
+                        <h3>Каналы</h3>
                         <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
@@ -61,7 +61,7 @@
 
                 <div class="content-section" id="bots-section">
                     <div class="section-header" data-type="bot">
-                        <h3>🤖 Боты</h3>
+                        <h3>Боты</h3>
                         <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
@@ -73,7 +73,7 @@
 
                 <div class="content-section" id="apps-section">
                     <div class="section-header" data-type="mini_app">
-                        <h3>📱 Мини-приложения</h3>
+                        <h3>Мини-приложения</h3>
                         <svg class="arrow-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M6 9l6 6 6-6"/>
                         </svg>
@@ -84,10 +84,12 @@
                 </div>
             </div>
             
+            <!--
             <div class="categories-section">
                 <h3>Категории</h3>
                 <div class="categories-grid" id="categoriesGrid"></div>
             </div>
+            -->
         </div>
 
         <div class="tab-content" id="recommendations-tab">
@@ -115,7 +117,7 @@
             <!-- Настройки -->
             <div class="settings-section">
                 <div class="settings-item" onclick="handleSettingsClick('notifications')">
-                    <div class="settings-item-icon">🔔</div>
+                    <!-- <div class="settings-item-icon"></div> -->
                     <div class="settings-item-content">
                         <div class="settings-item-title">Уведомления</div>
                         <div class="settings-item-subtitle">Настройка push-уведомлений</div>
@@ -124,7 +126,7 @@
                 </div>
                 
                 <div class="settings-item" onclick="handleSettingsClick('theme')">
-                    <div class="settings-item-icon">🌙</div>
+                    <!-- <div class="settings-item-icon"></div> -->
                     <div class="settings-item-content">
                         <div class="settings-item-title">Тема оформления</div>
                         <div class="settings-item-subtitle">Светлая/темная тема</div>
@@ -133,7 +135,7 @@
                 </div>
                 
                 <div class="settings-item" onclick="handleSettingsClick('language')">
-                    <div class="settings-item-icon">🌐</div>
+                    <!-- <div class="settings-item-icon"></div> -->
                     <div class="settings-item-content">
                         <div class="settings-item-title">Язык интерфейса</div>
                         <div class="settings-item-subtitle">Русский</div>
@@ -144,9 +146,9 @@
 
             <!-- Справка и поддержка -->
             <div class="help-section">
-                <h3>Справка и поддержка</h3>
+                <!-- <h3>Справка и поддержка</h3> -->
                 <div class="settings-item" onclick="handleSettingsClick('support')">
-                    <div class="settings-item-icon">🤖</div>
+                    <!-- <div class="settings-item-icon"></div> -->
                     <div class="settings-item-content">
                         <div class="settings-item-title">Бот поддержки</div>
                         <div class="settings-item-subtitle">Связаться с поддержкой</div>
@@ -155,7 +157,7 @@
                 </div>
                 
                 <div class="settings-item" onclick="handleSettingsClick('faq')">
-                    <div class="settings-item-icon">❓</div>
+                    <!-- <div class="settings-item-icon"></div> -->
                     <div class="settings-item-content">
                         <div class="settings-item-title">FAQ</div>
                         <div class="settings-item-subtitle">Часто задаваемые вопросы</div>
@@ -164,7 +166,7 @@
                 </div>
                 
                 <div class="settings-item" onclick="handleSettingsClick('privacy')">
-                    <div class="settings-item-icon">📝</div>
+                    <!-- <div class="settings-item-icon"></div> -->
                     <div class="settings-item-content">
                         <div class="settings-item-title">Политика конфиденциальности</div>
                         <div class="settings-item-subtitle">Условия использования</div>
@@ -221,7 +223,7 @@
     <div class="filter-modal" id="filterModal">
         <div class="filter-modal-content">
             <div class="filter-modal-header">
-                <h3>Фильтры</h3>
+                <h3>Фильтр</h3>
                 <button class="filter-modal-close" id="filterModalClose">×</button>
             </div>
             
@@ -247,6 +249,7 @@
                 </div>
             </div>
             
+            <!--
             <div class="filter-section">
                 <h4>Сортировка</h4>
                 <div class="filter-chips">
@@ -264,7 +267,8 @@
                     </label>
                 </div>
             </div>
-            
+            -->
+
             <div class="filter-section">
                 <h4>Категория</h4>
                 <div class="filter-categories" id="filterCategories">
