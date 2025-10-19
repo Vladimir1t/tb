@@ -820,58 +820,76 @@ function showMainTab() {
     window.removeEventListener('scroll', window.resultsScrollHandler);
     
     // ФИКС: Перезагружаем категории при возврате на главную
-    loadCategories();
+    // закомментил категории и убрал loadCategories();
+    // loadCategories();
 }
 
 // Инициализация вкладок
 function initializeTabs() {
     const tabs = document.querySelectorAll('.bottom-tab');
 
-    function switchTab(tabName) {
-        // Возвращаемся на главную если находимся в категории
-        if (document.getElementById('category-tab').classList.contains('active')) {
-            goBackToSearch();
-        }
-
-        // Скрываем все вкладки
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        // Убираем активный класс у всех вкладок
-        tabs.forEach(tab => tab.classList.remove('active'));
-        
-        // Активируем нужную вкладку
-        const targetTab = document.getElementById(`${tabName}-tab`);
-        if (targetTab) {
-            targetTab.classList.add('active');
-        }
-        
-        // Активируем соответствующую кнопку в навигации
-        const activeNavTab = document.querySelector(`.bottom-tab[data-tab="${tabName}"]`);
-        if (activeNavTab) {
-            activeNavTab.classList.add('active');
-        }
-
-        // Показываем/скрываем строку поиска в зависимости от вкладки
-        if (searchContainer) {
-            if (tabName === 'settings') {
-                searchContainer.classList.add('hidden');
-            } else {
-                searchContainer.classList.remove('hidden');
-            }
-        }
-
-        // Загружаем контент для вкладки
-        if (tabName === 'search') {
-            showMainTab();
-            loadContentSections();
-            loadCategories();
-        } else if (tabName === 'recommendations') {
-            loadRecommendations();
-        }
-        // Для settings ничего дополнительно не загружаем
+function switchTab(tabName) {
+    if (document.getElementById('category-tab').classList.contains('active')) {
+        goBackToSearch();
     }
+    
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    const targetTab = document.getElementById(`${tabName}-tab`);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+    
+    const activeNavTab = document.querySelector(`.bottom-tab[data-tab="${tabName}"]`);
+    if (activeNavTab) {
+        activeNavTab.classList.add('active');
+    }
+    
+    // Update active tab indicator position
+    const bottomTabs = document.querySelector('.bottom-tabs');
+    const tabsArray = ['search', 'recommendations', 'settings'];
+    const activeIndex = tabsArray.indexOf(tabName);
+    if (bottomTabs && activeIndex !== -1) {
+        bottomTabs.setAttribute('data-active-tab', activeIndex);
+    }
+    
+    if (searchContainer) {
+        if (tabName === 'settings') {
+            searchContainer.classList.add('hidden');
+        } else {
+            searchContainer.classList.remove('hidden');
+        }
+    }
+    
+    if (tabName === 'search') {
+        showMainTab();
+        loadContentSections();
+        // loadCategories(); // Закомментировано - категории убраны
+    } else if (tabName === 'recommendations') {
+        loadRecommendations();
+    }
+    // settings tab doesn't need to load anything
+}
+
+// Функция для обновления позиции и размера индикатора
+function updateTabIndicator() {
+    const bottomTabs = document.querySelector('.bottom-tabs');
+    const activeTab = document.querySelector('.bottom-tab.active');
+    
+    if (!bottomTabs || !activeTab) return;
+    
+    // Получаем размеры и позицию активной вкладки
+    const tabsRect = bottomTabs.getBoundingClientRect();
+    const activeRect = activeTab.getBoundingClientRect();
+    
+    // Вычисляем относительную позицию
+    const leftOffset = activeRect.left - tabsRect.left;
+    
+    // Устанавливаем CSS переменные для индикатора
+    bottomTabs.style.setProperty('--indicator-left', `${leftOffset}px`);
+    bottomTabs.style.setProperty('--indicator-width', `${activeRect.width}px`);
+}
 
     // Инициализация обработчиков вкладок
     tabs.forEach((tab) => {
@@ -1183,6 +1201,12 @@ async function checkSurveyStatus() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
 
+      // Initialize active tab indicator on first load
+    const bottomTabs = document.querySelector('.bottom-tabs');
+    if (bottomTabs) {
+        bottomTabs.setAttribute('data-active-tab', '0'); // Start with search tab
+    }
+
     // Инициализируем опросник
     if (window.Survey) {
         try {
@@ -1197,16 +1221,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обработчики событий
     if (searchInput) {
-        searchInput.addEventListener('input', debouncedSearch);
-        
-        // ФИКС: Закрываем клавиатуру при нажатии Enter
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchInput.blur();
-                debouncedSearch();
+    // УДАЛИТЕ ИЛИ ЗАКОММЕНТИРУЙТЕ ЭТИ СТРОКИ:
+    // searchInput.addEventListener('input', debouncedSearch);
+    
+    // ЗАМЕНИТЕ НА:
+    // Поиск только при нажатии Enter
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = searchInput?.value?.trim();
+            
+            // Скрываем клавиатуру
+            searchInput.blur();
+            
+            // Выполняем поиск
+            if (isInCategoryPage) {
+                categoryPage = 0;
+                categoryHasMore = true;
+                loadCategoryContent();
+            } else {
+                if (query.length > 0 || currentFilter || currentSubcategory) {
+                    loadProjects(currentContentType);
+                } else {
+                    showMainTab();
+                }
             }
-        });
+        }
+    });
     }
     
     if (filterBtn) {
@@ -1265,7 +1306,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Загружаем контент первой вкладки
     loadContentSections();
-    loadCategories();
+    // чтобы не отображались категории
+    // loadCategories();
     
     // Готовность приложения
     tg.ready();
