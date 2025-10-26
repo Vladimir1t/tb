@@ -1,4 +1,3 @@
-# routers/projects.py
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from typing import List, Optional, Dict, Set, Tuple
 import sqlite3
@@ -14,6 +13,11 @@ from auth import verify_telegram_auth
 from functools import lru_cache
 import time
 import hashlib
+import gc
+import psutil
+import os
+import random 
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -24,29 +28,94 @@ _index_lock = threading.Lock()
 
 _search_cache = {}
 _cache_lock = threading.Lock()
-_CACHE_TTL = 300  
+_CACHE_TTL = 300
+
+class SearchCache:
+    def __init__(self, max_size=500, ttl=300):
+        self._cache = {}
+        self._max_size = max_size
+        self._ttl = ttl
+        self._lock = threading.Lock()
+    
+    def get(self, key):
+        with self._lock:
+            if key in self._cache:
+                data, timestamp = self._cache[key]
+                if time.time() - timestamp < self._ttl:
+                    return data
+                else:
+                    del self._cache[key]
+            return None
+    
+    def set(self, key, data):
+        with self._lock:
+            if len(self._cache) >= self._max_size:
+                self._cleanup()
+            self._cache[key] = (data, time.time())
+    
+    def _cleanup(self):
+        """Очистка устаревших записей"""
+        current_time = time.time()
+        expired_keys = [
+            key for key, (_, timestamp) in self._cache.items()
+            if current_time - timestamp > self._ttl
+        ]
+        for key in expired_keys:
+            del self._cache[key]
+        
+        if len(self._cache) >= self._max_size:
+            sorted_keys = sorted(
+                self._cache.keys(), 
+                key=lambda k: self._cache[k][1]
+            )
+            for key in sorted_keys[:self._max_size // 2]:
+                del self._cache[key]
+    
+    def clear(self):
+        with self._lock:
+            self._cache.clear()
+    
+    def size(self):
+        with self._lock:
+            return len(self._cache)
+
+# ЗАМЕНА простого словаря на умный кэш
+_search_cache = SearchCache(max_size=500, ttl=300)
 
 def get_search_cache_key(query: str, params: dict) -> str:
     """Генерирует ключ для кэша поиска"""
     key_data = f"{query}_{params}"
     return hashlib.md5(key_data.encode()).hexdigest()
 
+def clear_memory():
+    """Очистка памяти"""
+    gc.collect()
+
+    # Очистка кэша поиска если он слишком большой
+    if _search_cache.size() > 1000:
+        print(f"🧹 Clearing large cache: {_search_cache.size()} entries")
+        _search_cache.clear()
+
 @lru_cache(maxsize=100)
 def perform_search_once(query: str, use_synonyms: bool, spell_check: bool, threshold: float) -> tuple:
-    """Выполняет поиск один раз и кэширует результаты"""
+    """Оптимизированный поиск с ограничениями"""
     print(f"🔍 Performing search for: '{query}'")
     
+    if len(query) > 100:
+        query = query[:100]
+    
     normalized_search = normalize_search_term(query)
+    search_limit = 500 if use_synonyms or spell_check else 200
     
     if use_synonyms or spell_check:
-        semantic_results = spell_aware_semantic_search(normalized_search, threshold, 1000)  # Большой лимит
+        semantic_results = spell_aware_semantic_search(normalized_search, threshold, search_limit)
     else:
-        semantic_results = enhanced_semantic_search(normalized_search, threshold, 1000)
+        semantic_results = enhanced_semantic_search(normalized_search, threshold, search_limit)
     
     semantic_ids = [result['id'] for result in semantic_results]
     print(f"✅ Found {len(semantic_ids)} total projects via semantic search")
     
-    return tuple(semantic_ids)  
+    return tuple(semantic_ids)
 
 @router.get("/projects/", response_model=List[Project])
 async def get_projects(
@@ -70,7 +139,7 @@ async def get_projects(
                 print("🔄 Building search index...")
                 build_search_index(conn)
             else:
-                print(f"✅ Search index ready with {len(search_index)} projects")
+                print(f"✅ Use ready Search index for {len(search_index)} projects")
         
         def ilike(pattern, value):
             if pattern is None or value is None:
@@ -91,18 +160,16 @@ async def get_projects(
         
         # ОБРАБОТКА SMART_SEARCH (по всем полям)
         if smart_search:
-            print(f"🔍 Smart search: '{smart_search}'")
+            print(f"====== 🔍 Smart search: '{smart_search}' ======")
             
             cache_key_smart = f"smart_{smart_search}_{use_synonyms}_{spell_check}_{similarity_threshold}"
-            if cache_key_smart not in _search_cache or time.time() - _search_cache[cache_key_smart]['timestamp'] > _CACHE_TTL:
+            cached_result = _search_cache.get(cache_key_smart)
+            
+            if cached_result is None:
                 semantic_results_smart = perform_search_once(smart_search, use_synonyms, spell_check, similarity_threshold)
-                with _cache_lock:
-                    _search_cache[cache_key_smart] = {
-                        'ids': semantic_results_smart,
-                        'timestamp': time.time()
-                    }
+                _search_cache.set(cache_key_smart, semantic_results_smart)
             else:
-                semantic_results_smart = _search_cache[cache_key_smart]['ids']
+                semantic_results_smart = cached_result
                 print(f"📦 Using cached smart search results ({len(semantic_results_smart)} items)")
             
             semantic_ids_smart = list(semantic_results_smart)
@@ -116,19 +183,17 @@ async def get_projects(
         
         # ОБРАБОТКА THEME (только по темам с smart search)
         if theme:
-            print(f"🎨 Theme smart search: '{theme}'")
+            print(f"====== 🎨 Theme smart search: '{theme}' ======")
             
             cache_key_theme = f"theme_{theme}_{use_synonyms}_{spell_check}_{similarity_threshold}"
-            if cache_key_theme not in _search_cache or time.time() - _search_cache[cache_key_theme]['timestamp'] > _CACHE_TTL:
+            cached_result = _search_cache.get(cache_key_theme)
+            
+            if cached_result is None:
                 semantic_results_theme = perform_search_once(theme, use_synonyms, spell_check, similarity_threshold)
-                with _cache_lock:
-                    _search_cache[cache_key_theme] = {
-                        'ids': semantic_results_theme,
-                        'timestamp': time.time()
-                    }
+                _search_cache.set(cache_key_theme, semantic_results_theme)
             else:
-                semantic_results_theme = _search_cache[cache_key_theme]['ids']
-                print(f"📦 Using cached theme search results ({len(semantic_results_theme)} items)")
+                semantic_results_theme = cached_result
+                print(f"Using cached theme search results ({len(semantic_results_theme)} items)")
             
             semantic_ids_theme = list(semantic_results_theme)
             
@@ -141,7 +206,7 @@ async def get_projects(
         
         # ОБРАБОТКА REGULAR SEARCH
         elif search:
-            print(f"🔍 Regular search: '{search}'")
+            #print(f"🔍 Regular search: '{search}'")
             query += " AND (ilike(?, name) OR ilike(?, theme) OR ilike(?, type))"
             like_pattern = f"%{search}%"
             params.extend([like_pattern, like_pattern, like_pattern])
@@ -150,27 +215,22 @@ async def get_projects(
         semantic_ids_to_use = []
         
         if semantic_ids_smart and semantic_ids_theme:
-            # ПЕРЕСЕЧЕНИЕ: проекты должны удовлетворять ОБОИМ условиям
             semantic_ids_to_use = list(set(semantic_ids_smart) & set(semantic_ids_theme))
-            print(f"🎯 Combined smart + theme search: {len(semantic_ids_smart)} smart ∩ {len(semantic_ids_theme)} theme = {len(semantic_ids_to_use)} projects")
+            print(f"===== 🎯 Combined smart + theme search: {len(semantic_ids_smart)} smart ∩ {len(semantic_ids_theme)} theme = {len(semantic_ids_to_use)} projects")
             
         elif semantic_ids_smart:
-            # Только smart search
             semantic_ids_to_use = semantic_ids_smart
-            print(f"🎯 Using smart search results: {len(semantic_ids_to_use)} projects")
+            print(f"===== 🎯 Using smart search results: {len(semantic_ids_to_use)} projects =====")
             
         elif semantic_ids_theme:
-            # Только theme search
             semantic_ids_to_use = semantic_ids_theme
-            print(f"🎯 Using theme search results: {len(semantic_ids_to_use)} projects")
+            print(f"===== 🎯 Using theme search results: {len(semantic_ids_to_use)} projects =====")
         
         # ДОБАВЛЯЕМ SEMANTIC IDS В ЗАПРОС
-        # ПЕРЕД пагинацией - ОТФИЛЬТРУЕМ ТОЛЬКО БОТОВ
         if semantic_ids_to_use and type:
             type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
             normalized_type = type_mapping.get(type.lower(), type.lower())
             
-            # Фильтруем semantic_ids_to_use чтобы оставить только ботов
             filtered_semantic_ids = []
             for project_id in semantic_ids_to_use:
                 project_info = project_data_cache.get(project_id, {})
@@ -181,6 +241,7 @@ async def get_projects(
             semantic_ids_to_use = filtered_semantic_ids
 
         # ТЕПЕРЬ применяем пагинацию к отфильтрованным ID
+        paginated_ids = []
         if semantic_ids_to_use:
             start_idx = offset
             end_idx = offset + limit
@@ -195,28 +256,6 @@ async def get_projects(
                 query += " AND 1=0"
                 print(f"❌ No {type} projects in paginated range")
 
-        print(f"🔍 DEBUG: Checking project types in semantic results...")
-        type_counter = {}
-        for project_id in semantic_ids_to_use[:50]:  # Проверим первые 50
-            project_info = project_data_cache.get(project_id, {})
-            project_type = project_info.get('type', 'unknown')
-            type_counter[project_type] = type_counter.get(project_type, 0) + 1
-
-        print(f"🔍 DEBUG: Project types in semantic results: {type_counter}")
-
-        # Проверим есть ли вообще боты в semantic_ids_to_use
-        bot_ids = []
-        for project_id in semantic_ids_to_use:
-            project_info = project_data_cache.get(project_id, {})
-            if project_info.get('type', '').lower() == 'bot':
-                bot_ids.append(project_id)
-
-        print(f"🔍 DEBUG: Found {len(bot_ids)} bots in semantic results")
-
-        if not bot_ids:
-            print("❌ WARNING: No bots found in semantic search results!")
-            # В этом случае semantic_ids_to_use будет пустым после пагинации
-
         # ФИЛЬТР ПО TYPE (применяется всегда если указан)
         if type:
             type_mapping = {'channels': 'channel', 'bots': 'bot', 'apps': 'mini_app'}
@@ -226,7 +265,6 @@ async def get_projects(
 
         # СОРТИРОВКА
         if semantic_ids_to_use and paginated_ids:
-            # Сохраняем порядок из семантического поиска для пагинированных ID
             order_case = "CASE "
             for i, project_id in enumerate(paginated_ids):
                 order_case += f"WHEN id = {project_id} THEN {i} "
@@ -240,7 +278,7 @@ async def get_projects(
             query += " LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
-        print(f"📝 Executing query with {len(params)} params")
+       # print(f"📝 Executing query with {len(params)} params")
 
         cursor.execute(query, params)
         rows = cursor.fetchall()
@@ -261,17 +299,54 @@ async def get_projects(
         print(f"❌ SQL error: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка SQL-запроса: {e}")
     finally:
+        if random.random() < 0.1:  # 10% chance чтобы не замедлять
+            clear_memory()
         if conn:
             conn.close()
 
+@router.post("/memory-status")
+async def memory_status():
+    """Статус использования памяти"""
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    
+    return {
+        "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
+        "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
+        "search_index_size": len(search_index),
+        "project_cache_size": len(project_data_cache),
+        "tokens_count": len(ALL_TOKENS),
+        "search_cache_size": _search_cache.size()
+    }
+
 @router.post("/clear-search-cache")
 async def clear_search_cache():
-    """Очищает кэш поиска (для администрирования)"""
-    with _cache_lock:
-        _search_cache.clear()
+    """Очищает кэш поиска и освобождает память"""
     perform_search_once.cache_clear()
-    return {"message": "Search cache cleared"}
+    _search_cache.clear()    
+    gc.collect()
+    
+    return {
+        "message": "Search cache cleared and memory freed",
+        "memory_status": await memory_status()
+    }
 
+def find_partial_matches(query: str, doc_tf: Dict[str, float]) -> List[Tuple[str, float]]:
+    """Находит частичные совпадения в документе"""
+    matches = []
+    query_terms = query.lower().split()
+    
+    for term in query_terms:
+        if len(term) < 2:
+            continue
+            
+        for doc_term, score in doc_tf.items():
+            if term in doc_term or doc_term in term:
+                similarity = min(len(term), len(doc_term)) / max(len(term), len(doc_term))
+                if similarity > 0.6:  # Порог схожести
+                    matches.append((doc_term, score * similarity))
+    
+    return matches
 
 def levenshtein_distance(s1: str, s2: str) -> int:
     """Вычисляет расстояние Левенштейна между двумя строками"""
@@ -368,19 +443,34 @@ def expand_query_with_synonyms(query: str) -> Set[str]:
     return expanded_terms
 
 def build_search_index(conn):
-    """Строим улучшенный поисковый индекс с поддержкой синонимов и стемминга"""
+    """Оптимизированное построение индекса с очисткой памяти"""
     global search_index, project_data_cache, ALL_TOKENS
     
     with _index_lock:
+        print(f"🔄 Building optimized search index...")
+        
+        # ОЧИСТКА ПАМЯТИ ПЕРЕД СОЗДАНИЕМ НОВОГО ИНДЕКСА
+        old_index_size = len(search_index)
+        old_cache_size = len(project_data_cache)
+        old_tokens_size = len(ALL_TOKENS)
+        
+        # Явная очистка
+        search_index.clear()
+        project_data_cache.clear()
+        ALL_TOKENS.clear()
+        
+        # Принудительная сборка мусора
+        gc.collect()
+        
+        print(f"🧹 Cleared: index={old_index_size}, cache={old_cache_size}, tokens={old_tokens_size}")
+        
+        # НОВОЕ: Ограничиваем размер данных
         cursor = conn.cursor()
         cursor.execute("SELECT id, name, theme, type, is_premium FROM projects")
         rows = cursor.fetchall()
         
-        search_index = {}
-        project_data_cache = {}
         all_unique_tokens = set()
-        
-        print(f"🔍 Building search index for {len(rows)} projects")
+        processed_count = 0
         
         for row in rows:
             project = dict(row)
@@ -389,16 +479,18 @@ def build_search_index(conn):
             
             content = f"{project['name']} {project['theme']} {project['type']}".lower()
             
+            # ОПТИМИЗАЦИЯ: Ограничиваем количество токенов на проект
             stemmed_words = normalize_and_stem(content)
-            
             enhanced_tokens = set()
-            for word in stemmed_words:
+            
+            for word in list(stemmed_words)[:50]:  # Максимум 50 слов на проект
                 enhanced_tokens.add(word)
                 synonyms = expand_with_synonyms(word)
-                enhanced_tokens.update(synonyms)
+                # Ограничиваем синонимы
+                enhanced_tokens.update(list(synonyms)[:10])
                 
                 if len(word) > 3:
-                    for i in range(len(word) - 2):
+                    for i in range(min(len(word) - 2, 5)):  # Максимум 5 n-gram
                         enhanced_tokens.add(word[i:i+3])
             
             word_count = Counter(enhanced_tokens)
@@ -410,11 +502,20 @@ def build_search_index(conn):
                 'original_words': stemmed_words,
                 'all_tokens': set(enhanced_tokens),
                 'is_premium': project.get('is_premium', False)
-            }        
+            }
+            
             all_unique_tokens.update(enhanced_tokens)
+            processed_count += 1
+            
+            # Периодическая сборка мусора для больших баз
+            if processed_count % 100 == 0:
+                gc.collect()
         
         ALL_TOKENS = list(all_unique_tokens)
-        print(f"📊 Search index built with {len(ALL_TOKENS)} unique tokens")
+        print(f"📊 Optimized index built: {len(ALL_TOKENS)} tokens for {processed_count} projects")
+        
+        # Очищаем кэш поиска при обновлении индекса
+        clear_search_cache()
 
 def find_similar_words_fast(query_word: str, max_distance: int = 2) -> List[str]:
     """Быстрый поиск похожих слов среди всех токенов индекса"""
@@ -440,7 +541,7 @@ def spell_aware_semantic_search(query, threshold=0.2, top_k=30):
     """Умный поиск с правильными приоритетами и отбрасыванием по score"""
     global search_index
     
-    print(f"🔍 Starting spell-aware search for: '{query}'")
+   # print(f"🔍 Starting spell-aware search for: '{query}'")
     
     if not search_index:
         print("❌ Search index is empty!")
@@ -539,7 +640,7 @@ def spell_aware_semantic_search(query, threshold=0.2, top_k=30):
             absolute_min_threshold = 0.4  
             final_threshold = min(dynamic_threshold, absolute_min_threshold)
             
-            print(f"🎯 Dynamic threshold: {final_threshold:.3f} (top_score: {top_score:.3f})")
+            # print(f"🎯 Dynamic threshold: {final_threshold:.3f}")
             
             filtered_count_before = len(similarities)
             similarities = [
@@ -551,7 +652,7 @@ def spell_aware_semantic_search(query, threshold=0.2, top_k=30):
             
             print(f"📊 Filtered: {filtered_count_before} → {filtered_count_after} results")
     
-    print(f"📊 Found {len(similarities)} results above threshold {threshold}")
+   # print(f"📊 Found {len(similarities)} results above threshold {threshold}")
     
     for pid, score, name_matches, theme_matches in similarities[:5]:
         project_info = project_data_cache.get(pid, {})
@@ -596,8 +697,8 @@ def enhanced_semantic_search(query, threshold=0.01, top_k=20):
     """Улучшенный семантический поиск с поддержкой частичных совпадений"""
     global search_index
     
-    print(f"🔍 Starting enhanced search for: '{query}'")
-    print(f"🔍 Threshold: {threshold}, Top K: {top_k}")
+   # print(f"🔍 Starting enhanced search for: '{query}'")
+   # print(f"🔍 Threshold: {threshold}, Top K: {top_k}")
     
     if not search_index:
         print("❌ Search index is empty!")
