@@ -35,7 +35,7 @@ index_manager = IndexManager()
 async def refresh_search_index():
     """Принудительно обновить поисковый индекс"""
     try:
-        logger.info("🔄 Forcing search index refresh...")
+        logger.info("Forcing search index refresh...")
         
         from routers.projects import build_search_index
         from database_connect import get_db_connection
@@ -45,7 +45,7 @@ async def refresh_search_index():
             conn = get_db_connection()
             build_search_index(conn)
             await index_manager.mark_refreshed()
-            logger.info("✅ Search index refreshed successfully")
+            logger.info("Search index refreshed successfully")
         except Exception as e:
             logger.error(f"❌ Failed to refresh search index: {e}")
         finally:
@@ -60,11 +60,11 @@ async def periodic_shuffle():
     while True:
         try:
             # Перемешивание БД каждые 2 часа 
-            await asyncio.sleep(2 * 60 * 60)  
-            logger.info("🔄 Starting scheduled database shuffle...")
+            await asyncio.sleep(3 * 60 * 60)  
+            #logger.info("🔄 Starting scheduled database shuffle...")
             
             database.shuffle_database('aggregator.db')
-            logger.info("✅ Database shuffle completed successfully")
+            logger.info("--- Database shuffle completed successfully ---")
             await refresh_search_index()
             
         except Exception as e:
@@ -74,12 +74,12 @@ async def periodic_shuffle():
 async def initial_setup():
     """Первоначальная настройка при запуске приложения"""
     try:
-        logger.info("🚀 Starting initial setup...")
-        logger.info("🔄 Initial database shuffle...")
-        database.shuffle_database('aggregator.db')
+        logger.info("--- Starting initial setup ---")
+        # logger.info("🔄 Initial database shuffle...")
+        # database.shuffle_database('aggregator.db')
         
         await refresh_search_index()
-        logger.info("✅ Initial setup completed successfully")
+        logger.info("Initial setup completed successfully")
         
     except Exception as e:
         logger.error(f"❌ Error during initial setup: {e}")
@@ -118,9 +118,9 @@ async def health_check():
     """Простой health check"""
     return {"status": "healthy", "message": "Server is running"}
 
-app.include_router(projects.router, tags=["Projects"]) # тут поменять для сервака
-app.include_router(users.router, tags=["Users"])       # тут поменять для сервака
-app.include_router(debug.router, tags=["Debug"])       # тут поменять для сервака
+app.include_router(projects.router, tags=["Projects"]) # тут поменять для сервака prefix="/api"
+app.include_router(users.router, tags=["Users"])       # тут поменять для сервака prefix="/api"
+app.include_router(debug.router, tags=["Debug"])       # тут поменять для сервака prefix="/api"
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
