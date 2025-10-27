@@ -7,7 +7,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from scripts import database
 
-from routers import projects, users, debug
+from routers import projects, users, debug, recommendations
 from bot import run_bot
 
 logging.basicConfig(level=logging.INFO)
@@ -79,6 +79,12 @@ async def initial_setup():
         database.shuffle_database('aggregator.db')
         
         await refresh_search_index()
+        
+        # Строим инвертированный индекс для рекомендаций
+        logger.info("🔨 Building inverted index for recommendations...")
+        import recommendation_engine
+        recommendation_engine.build_inverted_index()
+        
         logger.info("✅ Initial setup completed successfully")
         
     except Exception as e:
@@ -121,6 +127,7 @@ async def health_check():
 app.include_router(projects.router, tags=["Projects"]) # тут поменять для сервака
 app.include_router(users.router, tags=["Users"])       # тут поменять для сервака
 app.include_router(debug.router, tags=["Debug"])       # тут поменять для сервака
+app.include_router(recommendations.router, tags=["Recommendations"])
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

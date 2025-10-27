@@ -1273,6 +1273,33 @@ body {
     padding: 0;
 }
 
+/* Recommendation Reason */
+.recommendation-reason {
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
+    background: rgba(var(--color-teal-500-rgb), 0.1);
+    padding: var(--space-6) var(--space-10);
+    border-radius: var(--radius-base);
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-8);
+    font-style: italic;
+    border-left: 3px solid var(--color-primary);
+}
+
+/* Recommendations Type Section */
+.recommendations-type-section {
+    margin-bottom: var(--space-32);
+}
+
+.recommendations-type-section h4 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin-bottom: var(--space-16);
+    padding-left: var(--space-8);
+    border-left: 3px solid var(--color-primary);
+}
+
 /* Settings Section */
 .settings-section {
     margin-bottom: var(--space-32);
